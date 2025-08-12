@@ -96,7 +96,8 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
           ]}
         />
         <View pointerEvents="none" style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}>
-          <Text style={styles.tooltipText}>{step.text}</Text>
+          {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
+          {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
         </View>
       </Animated.View>
     </Modal>
@@ -116,6 +117,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
     maxWidth: 260,
+  },
+  tooltipTitle: {
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 4,
   },
   tooltipText: {
     color: '#000',

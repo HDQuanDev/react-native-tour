@@ -22,63 +22,61 @@ npm install react-native-svg
 ```jsx
 import { TourProvider, TourStep, useTour } from 'react-native-tour';
 
-// Describe the tour order and texts
-const steps = [
-  { id: 'start', order: 0, text: 'Tap to begin', screen: 'Home' },
-  { id: 'details', order: 1, text: 'Here are more details', screen: 'Details' },
-];
-
 // Wrap your app so the overlay stays above all screens
 const App = () => (
-  <TourProvider steps={steps} onNavigate={(screen) => navigation.navigate(screen)}>
+  <TourProvider onNavigate={(screen) => navigation.navigate(screen)}>
     <HomeScreen />
     <DetailsScreen />
   </TourProvider>
 );
 
-// Register refs in each screen
+// Register steps in each screen
 const HomeScreen = () => {
   const { start } = useTour();
   return (
     <View>
-      <TourStep id="start">
-        <Button title="Start" onPress={start} />
+      <TourStep
+        id="start"
+        order={0}
+        title="Tap to begin"
+        note="Let's get started"
+        screen="Home"
+        onPress={start}
+      >
+        <Button title="Start" />
       </TourStep>
     </View>
   );
 };
 
-const DetailsScreen = () => {
-  const { next } = useTour();
-  return (
-    <View>
-      <TourStep id="details">
-        <Button
-          title="Do something"
-          onPress={() => {
-            // handle button action
-            next(); // advance the tour after the user interacts
-          }}
-        />
-      </TourStep>
-    </View>
-  );
-};
+const DetailsScreen = () => (
+  <View>
+    <TourStep
+      id="details"
+      order={1}
+      title="Here are more details"
+      note="Press to continue"
+      screen="Details"
+      onPress={() => {
+        // handle button action
+      }}
+    >
+      <Button title="Do something" />
+    </TourStep>
+  </View>
+);
 ```
 
-The provider receives an ordered `steps` array describing each tooltip and the
-screen it appears on. A `TourStep` only needs an `id`; it registers its ref when
-mounted so the provider can measure it. When advancing to a step with a
-different `screen`, `onNavigate` is invoked, allowing easy integration with
-libraries like React Navigation. The overlay remains visible across screens.
-Users interact with the highlighted element directly, and can move on by either
-triggering `next()` in the element's handler or tapping outside the cutout.
+Each `TourStep` registers itself with the provider. When the wrapped element is
+pressed, the optional `onPress` runs and the tour automatically advances to the
+next step. Presses outside the highlight also move the tour forward. Steps are
+sorted by their `order`, and whenever the active step declares a `screen`,
+`onNavigate` is called so the overlay can follow navigation.
 
 ## Tips
 
-- Ensure the `id` passed to each `TourStep` matches an entry in the `steps`
-  array.
+- Give every `TourStep` a unique `id` and `order`.
 - Place `TourProvider` at the root of your app so it can render above different
   screens.
 - The next step won't highlight until the target screen's `TourStep` has
-  mounted, so make sure navigation completes before users tap again.
+  mounted, so ensure navigation completes before users tap again.

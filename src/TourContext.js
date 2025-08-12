@@ -9,15 +9,18 @@ export const TourContext = createContext({
   currentStep: undefined,
 });
 
-export const TourProvider = ({ children, steps, onNavigate }) => {
+export const TourProvider = ({ children, onNavigate }) => {
+  const [steps, setSteps] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(null);
-  const [refs, setRefs] = useState({});
 
-  const registerStep = useCallback((id, ref) => {
-    setRefs((prev) => ({ ...prev, [id]: ref }));
+  const registerStep = useCallback((step) => {
+    setSteps((prev) => {
+      const others = prev.filter((s) => s.id !== step.id);
+      return [...others, step];
+    });
   }, []);
 
-  const sortedSteps = useMemo(() => [...steps].sort((a, b) => a.order - b.order), [steps]);
+  const sortedSteps = useMemo(() => steps.slice().sort((a, b) => a.order - b.order), [steps]);
 
   const start = useCallback(() => {
     if (sortedSteps.length === 0) return;
@@ -41,7 +44,7 @@ export const TourProvider = ({ children, steps, onNavigate }) => {
   const stop = useCallback(() => setCurrentIndex(null), []);
 
   const currentStep = currentIndex === null ? undefined : sortedSteps[currentIndex];
-  const currentRef = currentStep ? refs[currentStep.id] : undefined;
+  const currentRef = currentStep?.ref;
 
   return (
     <TourContext.Provider value={{ registerStep, start, next, stop, currentStep }}>
