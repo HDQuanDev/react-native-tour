@@ -49,6 +49,10 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
 
   const screenWidth = Dimensions.get('window').width;
   const tooltipLeft = Math.min(layout.x, screenWidth - 260);
+  const arrowLeft = Math.min(
+    Math.max(layout.x + layout.width / 2 - 6, 0),
+    screenWidth - 12,
+  );
 
   return (
     <Modal transparent visible>
@@ -71,19 +75,25 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
 
         {/* Capture taps outside the highlighted area */}
         <Pressable
-          style={[StyleSheet.absoluteFill, { top: 0, height: layout.y }]}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
           onPress={onNext}
         />
         <Pressable
-          style={[StyleSheet.absoluteFill, { top: layout.y + layout.height, bottom: 0 }]}
+          style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
           onPress={onNext}
         />
         <Pressable
-          style={[StyleSheet.absoluteFill, { left: 0, width: layout.x, top: layout.y, height: layout.height }]}
+          style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
           onPress={onNext}
         />
         <Pressable
-          style={[StyleSheet.absoluteFill, { left: layout.x + layout.width, right: 0, top: layout.y, height: layout.height }]}
+          style={{
+            position: 'absolute',
+            left: layout.x + layout.width,
+            right: 0,
+            top: layout.y,
+            height: layout.height,
+          }}
           onPress={onNext}
         />
 
@@ -95,7 +105,14 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
             { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
           ]}
         />
-        <View pointerEvents="none" style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}>
+        <View
+          pointerEvents="none"
+          style={[styles.arrow, { top: layout.y + layout.height, left: arrowLeft }]}
+        />
+        <View
+          pointerEvents="none"
+          style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}
+        >
           {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
           {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
         </View>
@@ -117,6 +134,13 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
     maxWidth: 260,
+  },
+  arrow: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    backgroundColor: '#fff',
+    transform: [{ rotate: '45deg' }],
   },
   tooltipTitle: {
     fontWeight: 'bold',

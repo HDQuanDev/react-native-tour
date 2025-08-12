@@ -73,6 +73,10 @@ next step. Presses outside the highlight also move the tour forward. Steps are
 sorted by their `order`, and whenever the active step declares a `screen`,
 `onNavigate` is called so the overlay can follow navigation.
 
+The overlay draws a border, an arrow, and a tooltip pointing at the highlighted
+element. Use `title` and `note` to explain the current step so users know why
+they are interacting with that UI element.
+
 ## Tips
 
 - Give every `TourStep` a unique `id` and `order`.
@@ -80,3 +84,16 @@ sorted by their `order`, and whenever the active step declares a `screen`,
   screens.
 - The next step won't highlight until the target screen's `TourStep` has
   mounted, so ensure navigation completes before users tap again.
+
+## Detailed guide
+
+1. **Wrap your app** with `TourProvider` and pass an `onNavigate` callback that
+   drives your navigation library.
+2. **Register steps** by wrapping UI elements in `TourStep` and giving each a
+   unique `id` and increasing `order`.
+3. **Start the tour** by calling `start()` from `useTour`. The overlay will
+   highlight the first step and stay mounted across screens.
+4. **Handle presses** on highlighted elements via the `onPress` prop. After your
+   callback runs, the tour automatically moves to the next step.
+5. **Explain each step** with `title` and `note` so the tooltip tells users what
+   the highlighted area is for.
