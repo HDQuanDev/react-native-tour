@@ -1,6 +1,6 @@
 # react-native-tour
 
-Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác, còn người dùng chỉ có thể bấm vào vùng highlight. Khi bấm, `onPress` của `TourStep` được gọi và tour tự chuyển sang bước tiếp theo.
+Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác, còn người dùng chỉ có thể bấm vào vùng highlight. Khi bấm, `onPress` của `TourStep` (và cả `onPress` của phần tử con nếu có) được gọi rồi tour tự chuyển sang bước tiếp theo.
 
 ## Cài đặt
 
@@ -58,7 +58,7 @@ const DetailScreen = () => (
 );
 ```
 
-`TourProvider` nhận mảng `steps` để biết thứ tự và màn hình của từng bước. Mỗi `TourStep` chỉ cần cung cấp `id` và nội dung; khi người dùng bấm vào vùng highlight, hàm `onPress` của `TourStep` (nếu có) được chạy rồi tour tự chuyển sang bước tiếp theo. Nếu bước mới chỉ định `screen`, `onNavigate` sẽ được gọi để bạn điều hướng trước khi highlight tiếp theo được đo đạc.
+`TourProvider` nhận mảng `steps` để biết thứ tự và màn hình của từng bước. Mỗi `TourStep` chỉ cần cung cấp `id` và nội dung; khi người dùng bấm vào vùng highlight, hàm `onPress` của `TourStep` (nếu có) được chạy, `onPress` của phần tử con cũng được gọi, rồi tour tự chuyển sang bước tiếp theo. Nếu bước mới chỉ định `screen`, `onNavigate` sẽ được gọi để bạn điều hướng trước khi highlight tiếp theo được đo đạc.
 
 Tooltip được canh vị trí tự động: lật lên trên khi không đủ chỗ bên dưới và giới hạn trong bề rộng màn hình. Overlay chỉ biến mất khi người dùng hoàn thành bước hiện tại, vì vậy mọi thao tác bên ngoài vùng highlight đều bị chặn.
 

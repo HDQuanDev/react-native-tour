@@ -6,6 +6,7 @@ const TourStep = ({ id, title, note, onPress, children }) => {
   const ref = useRef(null);
   const { registerStep, currentStep, next } = useContext(TourContext);
   const child = React.Children.only(children);
+  const childOnPress = child.props.onPress;
 
   useEffect(() => {
     registerStep({ id, ref, title, note });
@@ -13,6 +14,7 @@ const TourStep = ({ id, title, note, onPress, children }) => {
 
   const handlePress = (...args) => {
     if (onPress) onPress(...args);
+    if (childOnPress) childOnPress(...args);
     if (currentStep?.id === id) next();
   };
 
