@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Modal,
   View,
   Text,
   StyleSheet,
@@ -13,7 +12,7 @@ import Svg, { Rect, Mask } from 'react-native-svg';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
-const TourOverlay = ({ step, targetRef, onNext }) => {
+const TourOverlay = ({ step, targetRef }) => {
   const [layout, setLayout] = useState(null);
 
   const anim = useRef({
@@ -55,69 +54,70 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
   );
 
   return (
-    <Modal transparent visible>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim.opacity }]} pointerEvents="box-none">
-        <Svg width="100%" height="100%" pointerEvents="none">
-          <Mask id="mask">
-            <Rect width="100%" height="100%" fill="#fff" />
-            <AnimatedRect
-              x={anim.x}
-              y={anim.y}
-              width={anim.width}
-              height={anim.height}
-              rx={8}
-              ry={8}
-              fill="#000"
-            />
-          </Mask>
-          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
-        </Svg>
+    <Animated.View
+      style={[StyleSheet.absoluteFill, { opacity: anim.opacity, zIndex: 9999 }]}
+      pointerEvents="box-none"
+    >
+      <Svg width="100%" height="100%" pointerEvents="none">
+        <Mask id="mask">
+          <Rect width="100%" height="100%" fill="#fff" />
+          <AnimatedRect
+            x={anim.x}
+            y={anim.y}
+            width={anim.width}
+            height={anim.height}
+            rx={8}
+            ry={8}
+            fill="#000"
+          />
+        </Mask>
+        <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
+      </Svg>
 
-        {/* Capture taps outside the highlighted area */}
-        <Pressable
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-          onPress={onNext}
-        />
-        <Pressable
-          style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-          onPress={onNext}
-        />
-        <Pressable
-          style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-          onPress={onNext}
-        />
-        <Pressable
-          style={{
-            position: 'absolute',
-            left: layout.x + layout.width,
-            right: 0,
-            top: layout.y,
-            height: layout.height,
-          }}
-          onPress={onNext}
-        />
+      {/* Block taps outside the highlighted area */}
+      <Pressable
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
+        onPress={() => {}}
+      />
+      <Pressable
+        style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
+        onPress={() => {}}
+      />
+      <Pressable
+        style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
+        onPress={() => {}}
+      />
+      <Pressable
+        style={{
+          position: 'absolute',
+          left: layout.x + layout.width,
+          right: 0,
+          top: layout.y,
+          height: layout.height,
+        }}
+        onPress={() => {}}
+      />
 
-        {/* Visible border that lets touches pass through */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.highlight,
-            { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
-          ]}
-        />
-        <View
-          pointerEvents="none"
-          style={[styles.arrow, { top: layout.y + layout.height, left: arrowLeft }]}
-        />
-        <View
-          pointerEvents="none"
-          style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}
-        >
-          {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
-          {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
-        </View>
-      </Animated.View>
-    </Modal>
+      {/* Visible border that lets touches pass through */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.highlight,
+          { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.arrow, { top: layout.y + layout.height, left: arrowLeft }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}
+      >
+        {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
+        {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
+      </View>
+    </Animated.View>
   );
 };
 

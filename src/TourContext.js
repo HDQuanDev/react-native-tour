@@ -49,7 +49,7 @@ export const TourProvider = ({ children, onNavigate }) => {
   return (
     <TourContext.Provider value={{ registerStep, start, next, stop, currentStep }}>
       {children}
-      <TourOverlay step={currentStep} targetRef={currentRef} onNext={next} />
+      <TourOverlay step={currentStep} targetRef={currentRef} />
     </TourContext.Provider>
   );
 };

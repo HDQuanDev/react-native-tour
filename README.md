@@ -2,7 +2,7 @@
 
 A lightweight helper to build interactive user guides in React Native apps. Written in
 plain JavaScript, it highlights elements using an SVG mask for smooth animations. Taps on the
-highlighted element pass through to your UI, while presses outside the cutout move to the next step.
+highlighted element pass through to your UI, while the shaded backdrop blocks all other touches.
 Steps can optionally declare a `screen` so the tour may navigate between screens while keeping the
 overlay visible.
 
@@ -69,9 +69,9 @@ const DetailsScreen = () => (
 
 Each `TourStep` registers itself with the provider. When the wrapped element is
 pressed, the optional `onPress` runs and the tour automatically advances to the
-next step. Presses outside the highlight also move the tour forward. Steps are
-sorted by their `order`, and whenever the active step declares a `screen`,
-`onNavigate` is called so the overlay can follow navigation.
+next step. Steps are sorted by their `order`, and whenever the active step
+declares a `screen`, `onNavigate` is called so the overlay can follow
+navigation.
 
 The overlay draws a border, an arrow, and a tooltip pointing at the highlighted
 element. Use `title` and `note` to explain the current step so users know why
