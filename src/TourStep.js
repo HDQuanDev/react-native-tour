@@ -13,9 +13,12 @@ const TourStep = ({ id, title, note, onPress, children }) => {
   }, [id, title, note, registerStep]);
 
   const handlePress = (...args) => {
-    if (onPress) onPress(...args);
-    if (childOnPress) childOnPress(...args);
-    if (currentStep?.id === id) next();
+    if (currentStep?.id === id) {
+      if (onPress) onPress(...args);
+      next();
+    } else if (childOnPress) {
+      childOnPress(...args);
+    }
   };
 
   return (

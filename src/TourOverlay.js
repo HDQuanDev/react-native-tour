@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   Dimensions,
   InteractionManager,
 } from 'react-native';
@@ -61,20 +60,20 @@ const TourOverlay = ({ step, targetRef }) => {
         <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
       </Svg>
 
-      {/* Block taps outside the highlighted area */}
-      <Pressable
+      {/* Block gestures outside the highlighted area */}
+      <View
         style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-        onPress={() => {}}
+        onStartShouldSetResponder={() => true}
       />
-      <Pressable
+      <View
         style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-        onPress={() => {}}
+        onStartShouldSetResponder={() => true}
       />
-      <Pressable
+      <View
         style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-        onPress={() => {}}
+        onStartShouldSetResponder={() => true}
       />
-      <Pressable
+      <View
         style={{
           position: 'absolute',
           left: layout.x + layout.width,
@@ -82,7 +81,7 @@ const TourOverlay = ({ step, targetRef }) => {
           top: layout.y,
           height: layout.height,
         }}
-        onPress={() => {}}
+        onStartShouldSetResponder={() => true}
       />
 
       {/* Visible border that lets touches pass through */}
