@@ -53,7 +53,7 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
   return (
     <Modal transparent visible>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim.opacity }]} pointerEvents="box-none">
-        <Svg width="100%" height="100%">
+        <Svg width="100%" height="100%" pointerEvents="none">
           <Mask id="mask">
             <Rect width="100%" height="100%" fill="#fff" />
             <AnimatedRect
@@ -68,14 +68,34 @@ const TourOverlay = ({ step, targetRef, onNext }) => {
           </Mask>
           <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
         </Svg>
+
+        {/* Capture taps outside the highlighted area */}
         <Pressable
+          style={[StyleSheet.absoluteFill, { top: 0, height: layout.y }]}
+          onPress={onNext}
+        />
+        <Pressable
+          style={[StyleSheet.absoluteFill, { top: layout.y + layout.height, bottom: 0 }]}
+          onPress={onNext}
+        />
+        <Pressable
+          style={[StyleSheet.absoluteFill, { left: 0, width: layout.x, top: layout.y, height: layout.height }]}
+          onPress={onNext}
+        />
+        <Pressable
+          style={[StyleSheet.absoluteFill, { left: layout.x + layout.width, right: 0, top: layout.y, height: layout.height }]}
+          onPress={onNext}
+        />
+
+        {/* Visible border that lets touches pass through */}
+        <View
+          pointerEvents="none"
           style={[
             styles.highlight,
             { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
           ]}
-          onPress={onNext}
         />
-        <View style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}>
+        <View pointerEvents="none" style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}>
           <Text style={styles.tooltipText}>{step.text}</Text>
         </View>
       </Animated.View>

@@ -1,9 +1,10 @@
 # react-native-tour
 
 A lightweight helper to build interactive user guides in React Native apps. Written in
-plain JavaScript, it highlights elements using an SVG mask for smooth animations and advances when
-the user taps the highlight. Steps can optionally declare a `screen` so the tour
-may navigate between screens while keeping the overlay visible.
+plain JavaScript, it highlights elements using an SVG mask for smooth animations. Taps on the
+highlighted element pass through to your UI, while presses outside the cutout move to the next step.
+Steps can optionally declare a `screen` so the tour may navigate between screens while keeping the
+overlay visible.
 
 ## Installation
 
@@ -47,21 +48,31 @@ const HomeScreen = () => {
   );
 };
 
-const DetailsScreen = () => (
-  <View>
-    <TourStep id="details">
-      <Text>Details screen content</Text>
-    </TourStep>
-  </View>
-);
+const DetailsScreen = () => {
+  const { next } = useTour();
+  return (
+    <View>
+      <TourStep id="details">
+        <Button
+          title="Do something"
+          onPress={() => {
+            // handle button action
+            next(); // advance the tour after the user interacts
+          }}
+        />
+      </TourStep>
+    </View>
+  );
+};
 ```
 
 The provider receives an ordered `steps` array describing each tooltip and the
 screen it appears on. A `TourStep` only needs an `id`; it registers its ref when
 mounted so the provider can measure it. When advancing to a step with a
 different `screen`, `onNavigate` is invoked, allowing easy integration with
-libraries like React Navigation. The overlay remains visible across screens, and
-users advance the tour by tapping the highlighted area.
+libraries like React Navigation. The overlay remains visible across screens.
+Users interact with the highlighted element directly, and can move on by either
+triggering `next()` in the element's handler or tapping outside the cutout.
 
 ## Tips
 
