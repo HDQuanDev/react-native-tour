@@ -1,0 +1,25 @@
+import React, { useContext, useEffect, useRef } from 'react';
+import { View } from 'react-native';
+import { TourContext } from './TourContext';
+
+interface Props {
+  id: string;
+  children: React.ReactNode;
+}
+
+const TourStep: React.FC<Props> = ({ id, children }) => {
+  const ref = useRef<View>(null);
+  const { registerStep } = useContext(TourContext);
+
+  useEffect(() => {
+    registerStep(id, ref);
+  }, [id, registerStep]);
+
+  return (
+    <View ref={ref} collapsable={false}>
+      {children}
+    </View>
+  );
+};
+
+export default TourStep;
