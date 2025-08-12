@@ -1,7 +1,7 @@
 # react-native-tour
 
-A lightweight helper to build interactive user guides in React Native apps. It
-highlights elements using an SVG mask for smooth animations and advances when
+A lightweight helper to build interactive user guides in React Native apps. Written in
+plain JavaScript, it highlights elements using an SVG mask for smooth animations and advances when
 the user taps the highlight. Steps can optionally declare a `screen` so the tour
 may navigate between screens while keeping the overlay visible.
 
@@ -17,11 +17,11 @@ npm install react-native-svg
 
 ## Basic usage
 
-```tsx
-import { TourProvider, TourStep, useTour, type TourStepConfig } from 'react-native-tour';
+```jsx
+import { TourProvider, TourStep, useTour } from 'react-native-tour';
 
 // Describe the tour order and texts
-const steps: TourStepConfig[] = [
+const steps = [
   { id: 'start', order: 0, text: 'Tap to begin', screen: 'Home' },
   { id: 'details', order: 1, text: 'Here are more details', screen: 'Details' },
 ];

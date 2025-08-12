@@ -1,17 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { MutableRefObject } from 'react';
 import TourOverlay from './TourOverlay';
-import type { TourStepConfig } from './types';
 
-interface TourContextValue {
-  registerStep: (id: string, ref: MutableRefObject<any>) => void;
-  start: () => void;
-  next: () => void;
-  stop: () => void;
-  currentStep?: TourStepConfig;
-}
-
-export const TourContext = createContext<TourContextValue>({
+export const TourContext = createContext({
   registerStep: () => {},
   start: () => {},
   next: () => {},
@@ -19,20 +9,11 @@ export const TourContext = createContext<TourContextValue>({
   currentStep: undefined,
 });
 
-interface TourProviderProps {
-  children: React.ReactNode;
-  steps: TourStepConfig[];
-  /**
-   * Called when a step points to a different screen. Implement with your navigation lib.
-   */
-  onNavigate?: (screen: string) => void;
-}
+export const TourProvider = ({ children, steps, onNavigate }) => {
+  const [currentIndex, setCurrentIndex] = useState(null);
+  const [refs, setRefs] = useState({});
 
-export const TourProvider: React.FC<TourProviderProps> = ({ children, steps, onNavigate }) => {
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const [refs, setRefs] = useState<Record<string, MutableRefObject<any>>>({});
-
-  const registerStep = useCallback((id: string, ref: MutableRefObject<any>) => {
+  const registerStep = useCallback((id, ref) => {
     setRefs((prev) => ({ ...prev, [id]: ref }));
   }, []);
 

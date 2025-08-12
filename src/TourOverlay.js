@@ -10,21 +10,11 @@ import {
   Animated,
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
-import type { MutableRefObject } from 'react';
-import type { TourStepConfig } from './types';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
-interface TourOverlayProps {
-  step?: TourStepConfig;
-  targetRef?: MutableRefObject<any>;
-  onNext: () => void;
-}
-
-const TourOverlay: React.FC<TourOverlayProps> = ({ step, targetRef, onNext }) => {
-  const [layout, setLayout] = useState<
-    { x: number; y: number; width: number; height: number } | null
-  >(null);
+const TourOverlay = ({ step, targetRef, onNext }) => {
+  const [layout, setLayout] = useState(null);
 
   const anim = useRef({
     x: new Animated.Value(0),
@@ -37,7 +27,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({ step, targetRef, onNext }) =>
   useEffect(() => {
     if (targetRef?.current) {
       InteractionManager.runAfterInteractions(() => {
-        targetRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+        targetRef.current?.measureInWindow((x, y, width, height) => {
           setLayout({ x, y, width, height });
           Animated.parallel([
             Animated.timing(anim.x, { toValue: x, duration: 250, useNativeDriver: false }),

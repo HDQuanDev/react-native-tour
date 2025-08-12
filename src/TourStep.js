@@ -2,13 +2,8 @@ import React, { useContext, useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { TourContext } from './TourContext';
 
-interface Props {
-  id: string;
-  children: React.ReactNode;
-}
-
-const TourStep: React.FC<Props> = ({ id, children }) => {
-  const ref = useRef<View>(null);
+const TourStep = ({ id, children }) => {
+  const ref = useRef(null);
   const { registerStep } = useContext(TourContext);
 
   useEffect(() => {
