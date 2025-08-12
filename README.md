@@ -1,6 +1,6 @@
 # react-native-tour
 
-Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác, còn người dùng vẫn có thể bấm trực tiếp vào vùng highlight để thực hiện hành động và chuyển sang bước tiếp theo.
+Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác, còn người dùng chỉ có thể bấm vào vùng highlight. Khi bấm, `onPress` của `TourStep` được gọi và tour tự chuyển sang bước tiếp theo.
 
 ## Cài đặt
 
@@ -16,26 +16,26 @@ npm install react-native-svg
 ```jsx
 import { TourProvider, TourStep, useTour } from 'react-native-tour';
 
+// Khai báo thứ tự và màn hình của từng bước
+const steps = [
+  { id: 'start', screen: 'Home' },
+  { id: 'details', screen: 'Details' },
+];
+
 // Bọc toàn bộ app để overlay luôn hiển thị phía trên mọi màn hình
 const App = () => (
-  <TourProvider onNavigate={(screen) => navigation.navigate(screen)}>
+  <TourProvider steps={steps} onNavigate={(s) => navigation.navigate(s)}>
     <HomeScreen />
     <DetailScreen />
   </TourProvider>
 );
 
-// Đăng ký các bước trong từng màn
+// Đăng ký phần tử cần highlight trong từng màn
 const HomeScreen = () => {
   const { start } = useTour();
   return (
     <View>
-      <TourStep
-        id="start"
-        order={0}
-        title="Bắt đầu"
-        note="Nhấn để khởi động tour"
-        screen="Home"
-      >
+      <TourStep id="start" title="Bắt đầu" note="Nhấn để khởi động tour">
         <Button title="Start" onPress={start} />
       </TourStep>
     </View>
@@ -46,10 +46,8 @@ const DetailScreen = () => (
   <View>
     <TourStep
       id="details"
-      order={1}
       title="Chi tiết"
       note="Nhấn để tiếp tục"
-      screen="Details"
       onPress={() => {
         // xử lý riêng của bạn
       }}
@@ -60,21 +58,21 @@ const DetailScreen = () => (
 );
 ```
 
-Mỗi `TourStep` tự đăng ký với `TourProvider`. Khi người dùng bấm vào vùng highlight, thư viện sẽ gọi `onPress` của phần tử gốc (nếu có), chạy hàm `onPress` truyền vào `TourStep` và tự động chuyển sang bước kế tiếp. Nếu bước mới khai báo `screen`, hàm `onNavigate` được gọi để bạn chuyển màn hình trước khi highlight tiếp theo được đo đạc.
+`TourProvider` nhận mảng `steps` để biết thứ tự và màn hình của từng bước. Mỗi `TourStep` chỉ cần cung cấp `id` và nội dung; khi người dùng bấm vào vùng highlight, hàm `onPress` của `TourStep` (nếu có) được chạy rồi tour tự chuyển sang bước tiếp theo. Nếu bước mới chỉ định `screen`, `onNavigate` sẽ được gọi để bạn điều hướng trước khi highlight tiếp theo được đo đạc.
 
 Tooltip được canh vị trí tự động: lật lên trên khi không đủ chỗ bên dưới và giới hạn trong bề rộng màn hình. Overlay chỉ biến mất khi người dùng hoàn thành bước hiện tại, vì vậy mọi thao tác bên ngoài vùng highlight đều bị chặn.
 
 ## Hướng dẫn chi tiết
 
-1. **Bọc ứng dụng bằng `TourProvider`** và truyền `onNavigate` nếu cần chuyển màn.
-2. **Đăng ký từng bước** bằng `TourStep` với `id` duy nhất và `order` tăng dần.
+1. **Bọc ứng dụng bằng `TourProvider`** cùng mảng `steps` và truyền `onNavigate` nếu cần chuyển màn.
+2. **Đăng ký từng bước** bằng `TourStep` với `id` trùng khớp và `title`, `note` để tooltip hiển thị.
 3. **Khởi động tour** bằng `start()` lấy từ `useTour`.
-4. **Xử lý tương tác** trong `onPress` của phần tử con hoặc của chính `TourStep`. Sau khi xử lý, thư viện sẽ tự gọi bước tiếp theo.
-5. **Giải thích cho người dùng** bằng `title` và `note` để Tooltip hiển thị thông tin rõ ràng.
+4. **Xử lý tương tác** trong `onPress` của `TourStep`. Sau khi chạy hàm này, thư viện tự chuyển sang bước tiếp theo.
+5. **Tooltip** tự căn vị trí để không che nội dung và luôn nằm trong màn hình.
 
 ## Mẹo
 
-- Đặt `TourProvider` ở cấp cao nhất (thường là sau NavigationContainer) để overlay không bị ẩn khi đổi màn hình.
-- Đảm bảo màn hình đích đã mount trước khi người dùng bấm tiếp; highlight chỉ xuất hiện khi `TourStep` tương ứng có mặt.
+- Đặt `TourProvider` ở cấp cao nhất (thường là sau `NavigationContainer`) để overlay không bị ẩn khi đổi màn.
+- Khi bước tiếp theo ở màn khác, `onNavigate` sẽ được gọi trước rồi highlight mới xuất hiện sau khi `TourStep` được mount.
 - Tùy chỉnh `react-native-svg` theo hướng dẫn của dự án để biên dịch chính xác trên iOS và Android.
 

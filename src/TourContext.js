@@ -9,41 +9,46 @@ export const TourContext = createContext({
   currentStep: undefined,
 });
 
-export const TourProvider = ({ children, onNavigate }) => {
-  const [steps, setSteps] = useState([]);
+export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => {
+  const [registry, setRegistry] = useState({});
   const [currentIndex, setCurrentIndex] = useState(null);
 
-  const registerStep = useCallback((step) => {
-    setSteps((prev) => {
-      const others = prev.filter((s) => s.id !== step.id);
-      return [...others, step];
-    });
+  const registerStep = useCallback(({ id, ref, title, note }) => {
+    setRegistry((prev) => ({ ...prev, [id]: { ref, title, note } }));
   }, []);
 
-  const sortedSteps = useMemo(() => steps.slice().sort((a, b) => a.order - b.order), [steps]);
+  const steps = useMemo(
+    () =>
+      stepDefs.map((s, index) => ({
+        order: index,
+        ...s,
+        ...(registry[s.id] || {}),
+      })),
+    [stepDefs, registry],
+  );
 
   const start = useCallback(() => {
-    if (sortedSteps.length === 0) return;
-    const first = sortedSteps[0];
+    if (steps.length === 0) return;
+    const first = steps[0];
     if (first.screen && onNavigate) onNavigate(first.screen);
     setCurrentIndex(0);
-  }, [sortedSteps, onNavigate]);
+  }, [steps, onNavigate]);
 
   const next = useCallback(() => {
     if (currentIndex === null) return;
     const nextIndex = currentIndex + 1;
-    if (nextIndex < sortedSteps.length) {
-      const step = sortedSteps[nextIndex];
+    if (nextIndex < steps.length) {
+      const step = steps[nextIndex];
       if (step.screen && onNavigate) onNavigate(step.screen);
       setCurrentIndex(nextIndex);
     } else {
       setCurrentIndex(null);
     }
-  }, [currentIndex, sortedSteps, onNavigate]);
+  }, [currentIndex, steps, onNavigate]);
 
   const stop = useCallback(() => setCurrentIndex(null), []);
 
-  const currentStep = currentIndex === null ? undefined : sortedSteps[currentIndex];
+  const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
 
   return (
