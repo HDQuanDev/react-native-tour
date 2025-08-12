@@ -1,36 +1,30 @@
 # react-native-tour
 
-A lightweight helper to build interactive user guides in React Native apps. Written in
-plain JavaScript, it highlights elements using an SVG mask for smooth animations. Taps on the
-highlighted element pass through to your UI, while the shaded backdrop blocks all other touches.
-Steps can optionally declare a `screen` so the tour may navigate between screens while keeping the
-overlay visible.
+Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác, còn người dùng vẫn có thể bấm trực tiếp vào vùng highlight để thực hiện hành động và chuyển sang bước tiếp theo.
 
-## Installation
+## Cài đặt
 
-Install directly from GitHub. React and React Native are peer dependencies and
-must already exist in your project. You also need `react-native-svg` for the
-masked highlight:
+Thêm gói từ GitHub và đảm bảo dự án đã có `react`, `react-native` và `react-native-svg`:
 
 ```bash
 npm install github:fake/react-native-tour
 npm install react-native-svg
 ```
 
-## Basic usage
+## Sử dụng cơ bản
 
 ```jsx
 import { TourProvider, TourStep, useTour } from 'react-native-tour';
 
-// Wrap your app so the overlay stays above all screens
+// Bọc toàn bộ app để overlay luôn hiển thị phía trên mọi màn hình
 const App = () => (
   <TourProvider onNavigate={(screen) => navigation.navigate(screen)}>
     <HomeScreen />
-    <DetailsScreen />
+    <DetailScreen />
   </TourProvider>
 );
 
-// Register steps in each screen
+// Đăng ký các bước trong từng màn
 const HomeScreen = () => {
   const { start } = useTour();
   return (
@@ -38,27 +32,26 @@ const HomeScreen = () => {
       <TourStep
         id="start"
         order={0}
-        title="Tap to begin"
-        note="Let's get started"
+        title="Bắt đầu"
+        note="Nhấn để khởi động tour"
         screen="Home"
-        onPress={start}
       >
-        <Button title="Start" />
+        <Button title="Start" onPress={start} />
       </TourStep>
     </View>
   );
 };
 
-const DetailsScreen = () => (
+const DetailScreen = () => (
   <View>
     <TourStep
       id="details"
       order={1}
-      title="Here are more details"
-      note="Press to continue"
+      title="Chi tiết"
+      note="Nhấn để tiếp tục"
       screen="Details"
       onPress={() => {
-        // handle button action
+        // xử lý riêng của bạn
       }}
     >
       <Button title="Do something" />
@@ -67,39 +60,21 @@ const DetailsScreen = () => (
 );
 ```
 
-Each `TourStep` registers itself with the provider. When the wrapped element is
-pressed, the optional `onPress` runs and the tour automatically advances to the
-next step. Steps are sorted by their `order`, and whenever the active step
-declares a `screen`, `onNavigate` is called so the overlay can follow
-navigation.
+Mỗi `TourStep` tự đăng ký với `TourProvider`. Khi người dùng bấm vào vùng highlight, thư viện sẽ gọi `onPress` của phần tử gốc (nếu có), chạy hàm `onPress` truyền vào `TourStep` và tự động chuyển sang bước kế tiếp. Nếu bước mới khai báo `screen`, hàm `onNavigate` được gọi để bạn chuyển màn hình trước khi highlight tiếp theo được đo đạc.
 
-The overlay draws a border, an arrow, and a tooltip pointing at the highlighted
-element. The tooltip automatically flips above the target when there isn't
-enough space below and clamps to the screen edges so it never overflows. Touches
-outside the highlight are blocked, keeping the overlay visible until the
-current `TourStep` is pressed. When a step supplies an `onPress`, that handler
-runs and the tour automatically advances so the overlay disappears. Use `title`
-and `note` to explain the current step so users know why they are interacting
-with that UI element.
+Tooltip được canh vị trí tự động: lật lên trên khi không đủ chỗ bên dưới và giới hạn trong bề rộng màn hình. Overlay chỉ biến mất khi người dùng hoàn thành bước hiện tại, vì vậy mọi thao tác bên ngoài vùng highlight đều bị chặn.
 
-## Tips
+## Hướng dẫn chi tiết
 
-- Give every `TourStep` a unique `id` and `order`.
-- Place `TourProvider` at the root of your app so it can render above different
-  screens.
-- The next step won't highlight until the target screen's `TourStep` has
-  mounted, so ensure navigation completes before users tap again.
+1. **Bọc ứng dụng bằng `TourProvider`** và truyền `onNavigate` nếu cần chuyển màn.
+2. **Đăng ký từng bước** bằng `TourStep` với `id` duy nhất và `order` tăng dần.
+3. **Khởi động tour** bằng `start()` lấy từ `useTour`.
+4. **Xử lý tương tác** trong `onPress` của phần tử con hoặc của chính `TourStep`. Sau khi xử lý, thư viện sẽ tự gọi bước tiếp theo.
+5. **Giải thích cho người dùng** bằng `title` và `note` để Tooltip hiển thị thông tin rõ ràng.
 
-## Detailed guide
+## Mẹo
 
-1. **Wrap your app** with `TourProvider` and pass an `onNavigate` callback that
-   drives your navigation library.
-2. **Register steps** by wrapping UI elements in `TourStep` and giving each a
-   unique `id` and increasing `order`.
-3. **Start the tour** by calling `start()` from `useTour`. The overlay will
-   highlight the first step and stay mounted across screens.
-4. **Handle presses** on highlighted elements via the `onPress` prop. After your
-   callback runs, the tour automatically moves to the next step. Touches outside
-   the highlight are ignored.
-5. **Explain each step** with `title` and `note` so the tooltip tells users what
-   the highlighted area is for.
+- Đặt `TourProvider` ở cấp cao nhất (thường là sau NavigationContainer) để overlay không bị ẩn khi đổi màn hình.
+- Đảm bảo màn hình đích đã mount trước khi người dùng bấm tiếp; highlight chỉ xuất hiện khi `TourStep` tương ứng có mặt.
+- Tùy chỉnh `react-native-svg` theo hướng dẫn của dự án để biên dịch chính xác trên iOS và Android.
+

@@ -16,8 +16,8 @@ const TourOverlay = ({ step, targetRef }) => {
   useEffect(() => {
     if (targetRef?.current) {
       InteractionManager.runAfterInteractions(() => {
-        targetRef.current?.measureInWindow((x, y, width, height) => {
-          setLayout({ x, y, width, height });
+        targetRef.current?.measure((x, y, width, height, pageX, pageY) => {
+          setLayout({ x: pageX, y: pageY, width, height });
         });
       });
     } else {
