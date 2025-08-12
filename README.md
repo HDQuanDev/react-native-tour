@@ -74,8 +74,12 @@ declares a `screen`, `onNavigate` is called so the overlay can follow
 navigation.
 
 The overlay draws a border, an arrow, and a tooltip pointing at the highlighted
-element. Use `title` and `note` to explain the current step so users know why
-they are interacting with that UI element.
+element. The tooltip automatically flips above the target when there isn't
+enough space below and clamps to the screen edges so it never overflows. Tapping
+outside the highlight advances the tour, while pressing a `TourStep` with
+`onPress` runs your handler and moves to the next step so the overlay disappears.
+Use `title` and `note` to explain the current step so users know why they are
+interacting with that UI element.
 
 ## Tips
 

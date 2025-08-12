@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Animated,
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
+import { TourContext } from './TourContext';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const TourOverlay = ({ step, targetRef }) => {
   const [layout, setLayout] = useState(null);
+  const [tooltipHeight, setTooltipHeight] = useState(0);
+  const { next } = useContext(TourContext);
 
   const anim = useRef({
     x: new Animated.Value(0),
@@ -46,12 +49,19 @@ const TourOverlay = ({ step, targetRef }) => {
     return null;
   }
 
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const tooltipLeft = Math.min(layout.x, screenWidth - 260);
   const arrowLeft = Math.min(
     Math.max(layout.x + layout.width / 2 - 6, 0),
     screenWidth - 12,
   );
+
+  let tooltipTop = layout.y + layout.height + 8;
+  let arrowTop = layout.y + layout.height;
+  if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
+    tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
+    arrowTop = layout.y - 12;
+  }
 
   return (
     <Animated.View
@@ -77,15 +87,15 @@ const TourOverlay = ({ step, targetRef }) => {
       {/* Block taps outside the highlighted area */}
       <Pressable
         style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-        onPress={() => {}}
+        onPress={next}
       />
       <Pressable
         style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-        onPress={() => {}}
+        onPress={next}
       />
       <Pressable
         style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-        onPress={() => {}}
+        onPress={next}
       />
       <Pressable
         style={{
@@ -95,7 +105,7 @@ const TourOverlay = ({ step, targetRef }) => {
           top: layout.y,
           height: layout.height,
         }}
-        onPress={() => {}}
+        onPress={next}
       />
 
       {/* Visible border that lets touches pass through */}
@@ -108,11 +118,12 @@ const TourOverlay = ({ step, targetRef }) => {
       />
       <View
         pointerEvents="none"
-        style={[styles.arrow, { top: layout.y + layout.height, left: arrowLeft }]}
+        style={[styles.arrow, { top: arrowTop, left: arrowLeft }]}
       />
       <View
         pointerEvents="none"
-        style={[styles.tooltip, { top: layout.y + layout.height + 8, left: tooltipLeft }]}
+        onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
+        style={[styles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
       >
         {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
         {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
