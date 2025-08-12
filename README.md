@@ -75,11 +75,12 @@ navigation.
 
 The overlay draws a border, an arrow, and a tooltip pointing at the highlighted
 element. The tooltip automatically flips above the target when there isn't
-enough space below and clamps to the screen edges so it never overflows. Tapping
-outside the highlight advances the tour, while pressing a `TourStep` with
-`onPress` runs your handler and moves to the next step so the overlay disappears.
-Use `title` and `note` to explain the current step so users know why they are
-interacting with that UI element.
+enough space below and clamps to the screen edges so it never overflows. Touches
+outside the highlight are blocked, keeping the overlay visible until the
+current `TourStep` is pressed. When a step supplies an `onPress`, that handler
+runs and the tour automatically advances so the overlay disappears. Use `title`
+and `note` to explain the current step so users know why they are interacting
+with that UI element.
 
 ## Tips
 
@@ -98,6 +99,7 @@ interacting with that UI element.
 3. **Start the tour** by calling `start()` from `useTour`. The overlay will
    highlight the first step and stay mounted across screens.
 4. **Handle presses** on highlighted elements via the `onPress` prop. After your
-   callback runs, the tour automatically moves to the next step.
+   callback runs, the tour automatically moves to the next step. Touches outside
+   the highlight are ignored.
 5. **Explain each step** with `title` and `note` so the tooltip tells users what
    the highlighted area is for.

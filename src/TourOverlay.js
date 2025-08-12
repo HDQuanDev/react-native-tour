@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,44 +6,24 @@ import {
   Pressable,
   Dimensions,
   InteractionManager,
-  Animated,
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
-import { TourContext } from './TourContext';
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const TourOverlay = ({ step, targetRef }) => {
   const [layout, setLayout] = useState(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
-  const { next } = useContext(TourContext);
-
-  const anim = useRef({
-    x: new Animated.Value(0),
-    y: new Animated.Value(0),
-    width: new Animated.Value(0),
-    height: new Animated.Value(0),
-    opacity: new Animated.Value(0),
-  }).current;
 
   useEffect(() => {
     if (targetRef?.current) {
       InteractionManager.runAfterInteractions(() => {
         targetRef.current?.measureInWindow((x, y, width, height) => {
           setLayout({ x, y, width, height });
-          Animated.parallel([
-            Animated.timing(anim.x, { toValue: x, duration: 250, useNativeDriver: false }),
-            Animated.timing(anim.y, { toValue: y, duration: 250, useNativeDriver: false }),
-            Animated.timing(anim.width, { toValue: width, duration: 250, useNativeDriver: false }),
-            Animated.timing(anim.height, { toValue: height, duration: 250, useNativeDriver: false }),
-            Animated.timing(anim.opacity, { toValue: 1, duration: 250, useNativeDriver: false }),
-          ]).start();
         });
       });
     } else {
       setLayout(null);
     }
-  }, [targetRef, anim]);
+  }, [targetRef, step]);
 
   if (!step || !layout) {
     return null;
@@ -64,18 +44,15 @@ const TourOverlay = ({ step, targetRef }) => {
   }
 
   return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { opacity: anim.opacity, zIndex: 9999 }]}
-      pointerEvents="box-none"
-    >
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]} pointerEvents="box-none">
       <Svg width="100%" height="100%" pointerEvents="none">
         <Mask id="mask">
           <Rect width="100%" height="100%" fill="#fff" />
-          <AnimatedRect
-            x={anim.x}
-            y={anim.y}
-            width={anim.width}
-            height={anim.height}
+          <Rect
+            x={layout.x}
+            y={layout.y}
+            width={layout.width}
+            height={layout.height}
             rx={8}
             ry={8}
             fill="#000"
@@ -87,15 +64,15 @@ const TourOverlay = ({ step, targetRef }) => {
       {/* Block taps outside the highlighted area */}
       <Pressable
         style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-        onPress={next}
+        onPress={() => {}}
       />
       <Pressable
         style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-        onPress={next}
+        onPress={() => {}}
       />
       <Pressable
         style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-        onPress={next}
+        onPress={() => {}}
       />
       <Pressable
         style={{
@@ -105,7 +82,7 @@ const TourOverlay = ({ step, targetRef }) => {
           top: layout.y,
           height: layout.height,
         }}
-        onPress={next}
+        onPress={() => {}}
       />
 
       {/* Visible border that lets touches pass through */}
@@ -128,7 +105,7 @@ const TourOverlay = ({ step, targetRef }) => {
         {step.title ? <Text style={styles.tooltipTitle}>{step.title}</Text> : null}
         {step.note ? <Text style={styles.tooltipText}>{step.note}</Text> : null}
       </View>
-    </Animated.View>
+    </View>
   );
 };
 
