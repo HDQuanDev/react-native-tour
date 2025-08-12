@@ -7,8 +7,9 @@ may navigate between screens while keeping the overlay visible.
 
 ## Installation
 
-Install directly from GitHub and make sure `react-native-svg` is available in
-your project:
+Install directly from GitHub. React and React Native are peer dependencies and
+must already exist in your project. You also need `react-native-svg` for the
+masked highlight:
 
 ```bash
 npm install github:fake/react-native-tour
