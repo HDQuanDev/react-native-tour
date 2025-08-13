@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from 'react';
 import TourOverlay from './TourOverlay';
-import TourOverlayRoot from './TourOverlayRoot';
+import TourOverlayRootWithContext from './TourOverlayRootWithContext';
 
 export const TourContext = createContext({
   registerStep: () => {},
@@ -17,7 +17,7 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const [currentIndex, setCurrentIndex] = useState(null);
   const [isLooping, setIsLooping] = useState(false);
   const [loopCount, setLoopCount] = useState(0);
-  const tourOverlayRoot = useRef(new TourOverlayRoot()).current;
+  const tourOverlayRoot = useRef(new TourOverlayRootWithContext()).current;
 
   const registerStep = useCallback(({ id, ref, title, note, onPress, autoDelay, continueText, theme }) => {
     setRegistry((prev) => ({ ...prev, [id]: { ref, title, note, onPress, autoDelay, continueText, theme } }));
@@ -41,12 +41,17 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
     }));
     
     if (currentSteps.length === 0) return;
-    setIsLooping(loop);
-    setLoopCount(0);
-    const first = currentSteps[0];
-    if (first.screen && onNavigate) onNavigate(first.screen);
-    setCurrentIndex(0);
-  }, [stepDefs, registry, onNavigate]);
+    
+    // Small delay for root siblings to ensure components are registered
+    const delay = useRootSiblings ? 50 : 0;
+    setTimeout(() => {
+      setIsLooping(loop);
+      setLoopCount(0);
+      const first = currentSteps[0];
+      if (first.screen && onNavigate) onNavigate(first.screen);
+      setCurrentIndex(0);
+    }, delay);
+  }, [stepDefs, registry, onNavigate, useRootSiblings]);
 
   const next = useCallback(() => {
     if (currentIndex === null) return;
@@ -100,6 +105,18 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
 
+  // Context value to pass to root siblings
+  const contextValue = useMemo(() => ({
+    registerStep,
+    start,
+    next,
+    stop,
+    currentStep,
+    setLoop,
+    isLooping,
+    loopCount
+  }), [registerStep, start, next, stop, currentStep, setLoop, isLooping, loopCount]);
+
   const handleStepPress = useCallback((evt) => {
     // Get current step at time of press
     const currentSteps = stepDefs.map((s, index) => ({
@@ -127,12 +144,12 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   useEffect(() => {
     if (useRootSiblings) {
       if (currentStep && currentRef) {
-        tourOverlayRoot.update(currentStep, currentRef, handleStepPress, loopCount);
+        tourOverlayRoot.update(currentStep, currentRef, handleStepPress, loopCount, contextValue);
       } else {
         tourOverlayRoot.destroy();
       }
     }
-  }, [currentStep, currentRef, handleStepPress, loopCount, useRootSiblings, tourOverlayRoot]);
+  }, [currentStep, currentRef, loopCount, useRootSiblings, tourOverlayRoot, contextValue]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -144,16 +161,7 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   }, [useRootSiblings, tourOverlayRoot]);
 
   return (
-    <TourContext.Provider value={{ 
-      registerStep, 
-      start, 
-      next, 
-      stop, 
-      currentStep, 
-      setLoop, 
-      isLooping,
-      loopCount 
-    }}>
+    <TourContext.Provider value={contextValue}>
       {children}
       {!useRootSiblings && (
         <TourOverlay 

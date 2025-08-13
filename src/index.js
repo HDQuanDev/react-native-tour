@@ -273,4 +273,5 @@
 export { TourProvider, useTour, TourContext } from './TourContext';
 export { default as TourStep } from './TourStep';
 export { default as TourOverlayRoot } from './TourOverlayRoot';
+export { default as TourOverlayRootWithContext } from './TourOverlayRootWithContext';
 export { default as useTourRoot } from './useTourRoot';
