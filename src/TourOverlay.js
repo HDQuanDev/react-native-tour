@@ -86,6 +86,24 @@ const getThemeStyles = (theme) => {
   };
 };
 
+// Component để block touch events khi đang transition
+const TransitionBlocker = () => {
+  return (
+    <View 
+      style={[StyleSheet.absoluteFill, { 
+        zIndex: 999999999,
+        backgroundColor: 'transparent'
+      }]}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={() => {}} // Block tất cả touch events
+      onResponderMove={() => {}}
+      onResponderTerminationRequest={() => false}
+      pointerEvents="auto"
+    />
+  );
+};
+
 const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSiblings = false }) => {
   const { next, stop, currentIndex, totalSteps } = useTour();
   // Handle null case for currentIndex
@@ -94,15 +112,28 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const [countdown, setCountdown] = useState(null);
   const [rootSibling, setRootSibling] = useState(null);
+  const [transitionBlockerSibling, setTransitionBlockerSibling] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Function to handle overlay press - same as "Tiếp theo" button
   const handleOverlayPress = () => {
+    // Không làm gì nếu đang transition
+    if (isTransitioning) return;
+    
+    // Set transitioning state
+    setIsTransitioning(true);
+    
     // Gọi onPress của step hiện tại nếu có
     if (step?.onPress) {
       step.onPress();
     }
     // Sau đó next
     next();
+    
+    // Reset transitioning sau một khoảng thời gian
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 1000); // 1 giây để đảm bảo transition hoàn thành
   };
 
   useEffect(() => {
@@ -120,6 +151,47 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
       setLayout(null);
     }
   }, [targetRef, step]);
+
+  // Effect để detect khi step thay đổi và set transitioning
+  useEffect(() => {
+    if (step && currentIndex !== null) {
+      setIsTransitioning(true);
+      // Reset sau khi component đã render xong
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 500); // 500ms để đảm bảo layout đã ổn định
+      
+      return () => clearTimeout(timer);
+    }
+  }, [step?.id, currentIndex]);
+
+  // Effect để manage TransitionBlocker cho root siblings mode
+  useEffect(() => {
+    if (!useRootSiblings) return;
+    
+    if (isTransitioning) {
+      // Tạo transition blocker
+      const blockerContent = <TransitionBlocker />;
+      if (transitionBlockerSibling) {
+        transitionBlockerSibling.update(blockerContent);
+      } else {
+        setTransitionBlockerSibling(new RootSiblings(blockerContent));
+      }
+    } else {
+      // Xóa transition blocker
+      if (transitionBlockerSibling) {
+        transitionBlockerSibling.destroy();
+        setTransitionBlockerSibling(null);
+      }
+    }
+    
+    return () => {
+      if (transitionBlockerSibling) {
+        transitionBlockerSibling.destroy();
+        setTransitionBlockerSibling(null);
+      }
+    };
+  }, [useRootSiblings, isTransitioning]);
 
   const scrollElementIntoViewAuto = () => {
     if (!targetRef?.current) return;
@@ -351,10 +423,18 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
                 {/* Skip Button - chỉ hiển thị khi đã qua bước đầu */}
                 {safeCurrentIndex > 0 && (
                   <TouchableOpacity 
-                    onPress={() => stop()}
+                    onPress={() => {
+                      if (isTransitioning) return; // Không làm gì nếu đang transition
+                      stop();
+                    }}
                     activeOpacity={0.7}
+                    disabled={isTransitioning}
                   >
-                    <Text style={[styles.skipButtonText, themeStyles.skipButtonText]}>
+                    <Text style={[
+                      styles.skipButtonText, 
+                      themeStyles.skipButtonText,
+                      isTransitioning && { opacity: 0.5 }
+                    ]}>
                       Bỏ qua
                     </Text>
                   </TouchableOpacity>
@@ -364,16 +444,17 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
                 {safeCurrentIndex < totalSteps - 1 && (
                   <TouchableOpacity 
                     onPress={() => {
-                      // Gọi onPress của step hiện tại nếu có
-                      if (step?.onPress) {
-                        step.onPress();
-                      }
-                      // Sau đó next
-                      next();
+                      if (isTransitioning) return; // Không làm gì nếu đang transition
+                      handleOverlayPress(); // Sử dụng function đã có logic transition
                     }}
                     activeOpacity={0.7}
+                    disabled={isTransitioning}
                   >
-                    <Text style={[styles.nextButtonText, themeStyles.nextButtonText]}>
+                    <Text style={[
+                      styles.nextButtonText, 
+                      themeStyles.nextButtonText,
+                      isTransitioning && { opacity: 0.5 }
+                    ]}>
                       Tiếp theo
                     </Text>
                   </TouchableOpacity>
@@ -438,7 +519,11 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
   }
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
+    <>
+      {/* Transition Blocker - hiển thị khi đang transition */}
+      {isTransitioning && <TransitionBlocker />}
+      
+      <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
       <Svg width="100%" height="100%" pointerEvents="none">
         <Mask id="mask">
           <Rect width="100%" height="100%" fill="#fff" />
@@ -575,10 +660,18 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
             {/* Skip Button - chỉ hiển thị khi đã qua bước đầu */}
             {safeCurrentIndex > 0 && (
               <TouchableOpacity 
-                onPress={() => stop()}
+                onPress={() => {
+                  if (isTransitioning) return; // Không làm gì nếu đang transition
+                  stop();
+                }}
                 activeOpacity={0.7}
+                disabled={isTransitioning}
               >
-                <Text style={[styles.skipButtonText, themeStyles.skipButtonText]}>
+                <Text style={[
+                  styles.skipButtonText, 
+                  themeStyles.skipButtonText,
+                  isTransitioning && { opacity: 0.5 }
+                ]}>
                   Bỏ qua
                 </Text>
               </TouchableOpacity>
@@ -588,16 +681,17 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
             {safeCurrentIndex < totalSteps - 1 && (
               <TouchableOpacity 
                 onPress={() => {
-                  // Gọi onPress của step hiện tại nếu có
-                  if (step?.onPress) {
-                    step.onPress();
-                  }
-                  // Sau đó next
-                  next();
+                  if (isTransitioning) return; // Không làm gì nếu đang transition
+                  handleOverlayPress(); // Sử dụng function đã có logic transition
                 }}
                 activeOpacity={0.7}
+                disabled={isTransitioning}
               >
-                <Text style={[styles.nextButtonText, themeStyles.nextButtonText]}>
+                <Text style={[
+                  styles.nextButtonText, 
+                  themeStyles.nextButtonText,
+                  isTransitioning && { opacity: 0.5 }
+                ]}>
                   Tiếp theo
                 </Text>
               </TouchableOpacity>
@@ -606,6 +700,7 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
         )}
       </View>
     </View>
+    </>
   );
 };
 
