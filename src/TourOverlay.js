@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
 import RootSiblings from 'react-native-root-siblings';
+import { useTour } from './TourContext';
 
 const getThemeStyles = (theme) => {
   if (theme === 'dark') {
@@ -35,6 +36,15 @@ const getThemeStyles = (theme) => {
       },
       buttonText: {
         color: '#000',
+      },
+      skipButton: {
+        backgroundColor: 'transparent',
+      },
+      skipButtonText: {
+        color: '#666',
+      },
+      nextButtonText: {
+        color: '#4CAF50', // Xanh lá
       },
     };
   }
@@ -64,14 +74,36 @@ const getThemeStyles = (theme) => {
     buttonText: {
       color: '#fff',
     },
+    skipButton: {
+      backgroundColor: 'transparent',
+    },
+    skipButtonText: {
+      color: '#999',
+    },
+    nextButtonText: {
+      color: '#4CAF50', // Xanh lá
+    },
   };
 };
 
 const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSiblings = false }) => {
+  const { next, stop, currentIndex, totalSteps } = useTour();
+  // Handle null case for currentIndex
+  const safeCurrentIndex = currentIndex !== null ? currentIndex : 0;
   const [layout, setLayout] = useState(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const [countdown, setCountdown] = useState(null);
   const [rootSibling, setRootSibling] = useState(null);
+
+  // Function to handle overlay press - same as "Tiếp theo" button
+  const handleOverlayPress = () => {
+    // Gọi onPress của step hiện tại nếu có
+    if (step?.onPress) {
+      step.onPress();
+    }
+    // Sau đó next
+    next();
+  };
 
   useEffect(() => {
     if (targetRef?.current) {
@@ -155,198 +187,426 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
 
   // Always call this useEffect - manage root siblings
   useEffect(() => {
+    console.log('TourOverlay useEffect:', { useRootSiblings, step: !!step, layout: !!layout });
+    
     if (!useRootSiblings) {
       return;
     }
 
     if (step && layout) {
-      // Create or update root sibling
-      const overlayContent = renderOverlayContent();
+      console.log('Creating root sibling overlay...', step.id);
+      // Create overlay content
+      const theme = step.theme || 'light';
+      const themeStyles = getThemeStyles(theme);
+
+      const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+      const tooltipLeft = Math.min(layout.x, screenWidth - 260);
+      const arrowLeft = Math.min(
+        Math.max(layout.x + layout.width / 2 - 6, 0),
+        screenWidth - 12,
+      );
+
+      let tooltipTop = layout.y + layout.height + 8;
+      let arrowTop = layout.y + layout.height;
+      if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
+        tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
+        arrowTop = layout.y - 12;
+      }
+
+      const overlayContent = (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
+          <Svg width="100%" height="100%" pointerEvents="none">
+            <Mask id="mask">
+              <Rect width="100%" height="100%" fill="#fff" />
+              <Rect
+                x={layout.x}
+                y={layout.y}
+                width={layout.width}
+                height={layout.height}
+                rx={8}
+                ry={8}
+                fill="#000"
+              />
+            </Mask>
+            <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
+          </Svg>
+
+          {/* Block gestures outside highlighted area */}
+          <View
+            style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={() => handleOverlayPress()}
+            onResponderMove={() => {}}
+            onResponderTerminationRequest={() => false}
+          />
+          
+          <View
+            style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={() => handleOverlayPress()}
+            onResponderMove={() => {}}
+            onResponderTerminationRequest={() => false}
+          />
+          
+          <View
+            style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={() => handleOverlayPress()}
+            onResponderMove={() => {}}
+            onResponderTerminationRequest={() => false}
+          />
+          
+          <View
+            style={{
+              position: 'absolute',
+              left: layout.x + layout.width,
+              right: 0,
+              top: layout.y,
+              height: layout.height,
+            }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={() => handleOverlayPress()}
+            onResponderMove={() => {}}
+            onResponderTerminationRequest={() => false}
+          />
+
+          {/* Highlighted area touch handler */}
+          <View
+            style={{
+              position: 'absolute',
+              left: layout.x,
+              top: layout.y,
+              width: layout.width,
+              height: layout.height,
+              zIndex: 10000,
+            }}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={(evt) => {
+              if (onStepPress) {
+                onStepPress(evt);
+              }
+            }}
+            onResponderTerminationRequest={() => false}
+          />
+
+          {/* Highlight border */}
+          <View
+            pointerEvents="none"
+            style={[
+              styles.highlight,
+              { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+            ]}
+          />
+          
+          {/* Tooltip */}
+          <View
+            pointerEvents="none"
+            style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
+          />
+          <View
+            pointerEvents="auto"
+            onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
+            style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
+          >
+            {/* Loop Counter */}
+            {loopCount > 0 && (
+              <View style={styles.loopCounter}>
+                <Text style={[styles.loopText, themeStyles.countdown]}>
+                  🔄 Lần {loopCount}
+                </Text>
+              </View>
+            )}
+            
+            {step.title ? (
+              <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
+            ) : null}
+            {step.note ? (
+              <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
+            ) : null}
+            {countdown !== null ? (
+              <Text style={[styles.countdownText, themeStyles.countdown]}>
+                Tự động chuyển sau {countdown} giây...
+              </Text>
+            ) : null}
+            
+            {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
+              <TouchableOpacity 
+                style={[styles.continueButton, themeStyles.button]}
+                onPress={() => onStepPress?.()}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
+                  {step.continueText}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+
+            {/* Buttons Row */}
+            {(!step.autoDelay || step.autoDelay <= 0) && (
+              <View style={styles.buttonsContainer}>
+                {/* Skip Button - chỉ hiển thị khi đã qua bước đầu */}
+                {safeCurrentIndex > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => stop()}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.skipButtonText, themeStyles.skipButtonText]}>
+                      Bỏ qua
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Next Button - không hiển thị ở bước cuối */}
+                {safeCurrentIndex < totalSteps - 1 && (
+                  <TouchableOpacity 
+                    onPress={() => {
+                      // Gọi onPress của step hiện tại nếu có
+                      if (step?.onPress) {
+                        step.onPress();
+                      }
+                      // Sau đó next
+                      next();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.nextButtonText, themeStyles.nextButtonText]}>
+                      Tiếp theo
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+      );
       
+      // Create or update root sibling
       if (rootSibling) {
+        console.log('Updating existing root sibling...');
         rootSibling.update(overlayContent);
       } else {
+        console.log('Creating new root sibling...');
         setRootSibling(new RootSiblings(overlayContent));
       }
     } else {
-      // Destroy root sibling
+      console.log('Destroying root sibling...', { step: !!step, layout: !!layout });
+      // Destroy root sibling when no step or layout
       if (rootSibling) {
         rootSibling.destroy();
         setRootSibling(null);
       }
     }
     
+    // Cleanup function
     return () => {
       if (rootSibling) {
         rootSibling.destroy();
+        setRootSibling(null);
       }
     };
-  }, [useRootSiblings, step, layout, countdown, tooltipHeight, loopCount]);
-
-  const renderOverlayContent = () => {
-    if (!step || !layout) {
-      return null;
-    }
-
-    const theme = step.theme || 'light';
-    const themeStyles = getThemeStyles(theme);
-
-    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-    const tooltipLeft = Math.min(layout.x, screenWidth - 260);
-    const arrowLeft = Math.min(
-      Math.max(layout.x + layout.width / 2 - 6, 0),
-      screenWidth - 12,
-    );
-
-    let tooltipTop = layout.y + layout.height + 8;
-    let arrowTop = layout.y + layout.height;
-    if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
-      tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
-      arrowTop = layout.y - 12;
-    }
-
-    return (
-      <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
-        <Svg width="100%" height="100%" pointerEvents="none">
-          <Mask id="mask">
-            <Rect width="100%" height="100%" fill="#fff" />
-            <Rect
-              x={layout.x}
-              y={layout.y}
-              width={layout.width}
-              height={layout.height}
-              rx={8}
-              ry={8}
-              fill="#000"
-            />
-          </Mask>
-          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
-        </Svg>
-
-        {/* Block gestures outside highlighted area */}
-        <View
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={() => {}}
-          onResponderMove={() => {}}
-          onResponderTerminationRequest={() => false}
-        />
-        
-        <View
-          style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={() => {}}
-          onResponderMove={() => {}}
-          onResponderTerminationRequest={() => false}
-        />
-        
-        <View
-          style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={() => {}}
-          onResponderMove={() => {}}
-          onResponderTerminationRequest={() => false}
-        />
-        
-        <View
-          style={{
-            position: 'absolute',
-            left: layout.x + layout.width,
-            right: 0,
-            top: layout.y,
-            height: layout.height,
-          }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={() => {}}
-          onResponderMove={() => {}}
-          onResponderTerminationRequest={() => false}
-        />
-
-        {/* Highlighted area touch handler */}
-        <View
-          style={{
-            position: 'absolute',
-            left: layout.x,
-            top: layout.y,
-            width: layout.width,
-            height: layout.height,
-            zIndex: 10000,
-          }}
-          onStartShouldSetResponder={() => true}
-          onResponderGrant={(evt) => {
-            if (onStepPress) {
-              onStepPress(evt);
-            }
-          }}
-          onResponderTerminationRequest={() => false}
-        />
-
-        {/* Highlight border */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.highlight,
-            { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
-          ]}
-        />
-        
-        {/* Tooltip */}
-        <View
-          pointerEvents="none"
-          style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
-        />
-        <View
-          pointerEvents={(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? "auto" : "none"}
-          onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
-          style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
-        >
-          {/* Loop Counter */}
-          {loopCount > 0 && (
-            <View style={styles.loopCounter}>
-              <Text style={[styles.loopText, themeStyles.countdown]}>
-                🔄 Lần {loopCount}
-              </Text>
-            </View>
-          )}
-          
-          {step.title ? (
-            <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
-          ) : null}
-          {step.note ? (
-            <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
-          ) : null}
-          {countdown !== null ? (
-            <Text style={[styles.countdownText, themeStyles.countdown]}>
-              Tự động chuyển sau {countdown} giây...
-            </Text>
-          ) : null}
-          
-          {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
-            <TouchableOpacity 
-              style={[styles.continueButton, themeStyles.button]}
-              onPress={() => onStepPress?.()}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
-                {step.continueText}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-    );
-  };
+  }, [useRootSiblings, step, layout, countdown, tooltipHeight, loopCount, safeCurrentIndex, totalSteps, next, stop, onStepPress, handleOverlayPress]);
 
   // If using root siblings, don't render normally
   if (useRootSiblings) {
     return null;
   }
 
-  return renderOverlayContent();
+  // Regular render for non-root siblings mode
+  if (!step || !layout) {
+    return null;
+  }
+
+  const theme = step.theme || 'light';
+  const themeStyles = getThemeStyles(theme);
+
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const tooltipLeft = Math.min(layout.x, screenWidth - 260);
+  const arrowLeft = Math.min(
+    Math.max(layout.x + layout.width / 2 - 6, 0),
+    screenWidth - 12,
+  );
+
+  let tooltipTop = layout.y + layout.height + 8;
+  let arrowTop = layout.y + layout.height;
+  if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
+    tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
+    arrowTop = layout.y - 12;
+  }
+
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
+      <Svg width="100%" height="100%" pointerEvents="none">
+        <Mask id="mask">
+          <Rect width="100%" height="100%" fill="#fff" />
+          <Rect
+            x={layout.x}
+            y={layout.y}
+            width={layout.width}
+            height={layout.height}
+            rx={8}
+            ry={8}
+            fill="#000"
+          />
+        </Mask>
+        <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
+      </Svg>
+
+      {/* Block gestures outside highlighted area */}
+      <View
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={() => handleOverlayPress()}
+        onResponderMove={() => {}}
+        onResponderTerminationRequest={() => false}
+      />
+      
+      <View
+        style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={() => handleOverlayPress()}
+        onResponderMove={() => {}}
+        onResponderTerminationRequest={() => false}
+      />
+      
+      <View
+        style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={() => handleOverlayPress()}
+        onResponderMove={() => {}}
+        onResponderTerminationRequest={() => false}
+      />
+      
+      <View
+        style={{
+          position: 'absolute',
+          left: layout.x + layout.width,
+          right: 0,
+          top: layout.y,
+          height: layout.height,
+        }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={() => handleOverlayPress()}
+        onResponderMove={() => {}}
+        onResponderTerminationRequest={() => false}
+      />
+
+      {/* Highlighted area touch handler */}
+      <View
+        style={{
+          position: 'absolute',
+          left: layout.x,
+          top: layout.y,
+          width: layout.width,
+          height: layout.height,
+          zIndex: 10000,
+        }}
+        onStartShouldSetResponder={() => true}
+        onResponderGrant={(evt) => {
+          if (onStepPress) {
+            onStepPress(evt);
+          }
+        }}
+        onResponderTerminationRequest={() => false}
+      />
+
+      {/* Highlight border */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.highlight,
+          { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+        ]}
+      />
+      
+      {/* Tooltip */}
+      <View
+        pointerEvents="none"
+        style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
+      />
+      <View
+        pointerEvents="auto"
+        onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
+        style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
+      >
+        {/* Loop Counter */}
+        {loopCount > 0 && (
+          <View style={styles.loopCounter}>
+            <Text style={[styles.loopText, themeStyles.countdown]}>
+              🔄 Lần {loopCount}
+            </Text>
+          </View>
+        )}
+        
+        {step.title ? (
+          <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
+        ) : null}
+        {step.note ? (
+          <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
+        ) : null}
+        {countdown !== null ? (
+          <Text style={[styles.countdownText, themeStyles.countdown]}>
+            Tự động chuyển sau {countdown} giây...
+          </Text>
+        ) : null}
+        
+        {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
+          <TouchableOpacity 
+            style={[styles.continueButton, themeStyles.button]}
+            onPress={() => onStepPress?.()}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
+              {step.continueText}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Buttons Row */}
+        {(!step.autoDelay || step.autoDelay <= 0) && (
+          <View style={styles.buttonsContainer}>
+            {/* Skip Button - chỉ hiển thị khi đã qua bước đầu */}
+            {safeCurrentIndex > 0 && (
+              <TouchableOpacity 
+                onPress={() => stop()}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.skipButtonText, themeStyles.skipButtonText]}>
+                  Bỏ qua
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Next Button - không hiển thị ở bước cuối */}
+            {safeCurrentIndex < totalSteps - 1 && (
+              <TouchableOpacity 
+                onPress={() => {
+                  // Gọi onPress của step hiện tại nếu có
+                  if (step?.onPress) {
+                    step.onPress();
+                  }
+                  // Sau đó next
+                  next();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.nextButtonText, themeStyles.nextButtonText]}>
+                  Tiếp theo
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -420,6 +680,20 @@ const styles = StyleSheet.create({
   loopText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  nextButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  skipButtonText: {
+    fontSize: 14,
+    fontWeight: '400',
   },
 });
 

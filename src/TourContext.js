@@ -132,7 +132,9 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
       currentStep, 
       setLoop, 
       isLooping,
-      loopCount 
+      loopCount,
+      currentIndex,
+      totalSteps: steps.length
     }}>
       {children}
       <TourOverlay 
