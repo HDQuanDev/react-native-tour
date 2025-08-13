@@ -171,6 +171,89 @@
  *   </View>
  * );
  * 
+ * // Using with Root Siblings for Modal/RBSheet overlays
+ * import { TourProvider, useTourRoot } from 'react-native-tour';
+ * 
+ * // Method 1: Using TourProvider with useRootSiblings prop
+ * const App = () => (
+ *   <TourProvider 
+ *     steps={tourSteps} 
+ *     onNavigate={handleNavigate}
+ *     useRootSiblings={true}  // Enable root siblings mode
+ *   >
+ *     <YourApp />
+ *   </TourProvider>
+ * );
+ * 
+ * // Method 2: Using useTourRoot hook for manual control
+ * const ModalWithTour = () => {
+ *   const { showTour, hideTour } = useTourRoot();
+ *   const buttonRef = useRef();
+ *   
+ *   const handleShowTour = () => {
+ *     const step = {
+ *       id: 'modal-button',
+ *       title: 'Modal Button',
+ *       note: 'This button is inside a modal and tour overlay appears on top!',
+ *       continueText: 'Got it',
+ *       theme: 'dark'
+ *     };
+ *     
+ *     showTour(step, buttonRef, () => {
+ *       console.log('Tour step completed in modal');
+ *       hideTour();
+ *     });
+ *   };
+ *   
+ *   return (
+ *     <Modal visible={modalVisible}>
+ *       <TouchableOpacity ref={buttonRef} onPress={handleShowTour}>
+ *         <Text>Show Tour in Modal</Text>
+ *       </TouchableOpacity>
+ *     </Modal>
+ *   );
+ * };
+ * 
+ * // Method 3: RBSheet with tour overlay
+ * const RBSheetWithTour = () => {
+ *   const { showTour, hideTour } = useTourRoot();
+ *   const actionRef = useRef();
+ *   const rbSheetRef = useRef();
+ *   
+ *   const showModalTour = () => {
+ *     rbSheetRef.current.open();
+ *     
+ *     setTimeout(() => {
+ *       const step = {
+ *         id: 'rbsheet-action',
+ *         title: 'Bottom Sheet Action',
+ *         note: 'This action is in RBSheet with tour overlay on top level!',
+ *         autoDelay: 5,
+ *         theme: 'light'
+ *       };
+ *       
+ *       showTour(step, actionRef, () => {
+ *         hideTour();
+ *         rbSheetRef.current.close();
+ *       });
+ *     }, 300);
+ *   };
+ *   
+ *   return (
+ *     <>
+ *       <TouchableOpacity onPress={showModalTour}>
+ *         <Text>Open RBSheet with Tour</Text>
+ *       </TouchableOpacity>
+ *       
+ *       <RBSheet ref={rbSheetRef}>
+ *         <TouchableOpacity ref={actionRef}>
+ *           <Text>Action in Bottom Sheet</Text>
+ *         </TouchableOpacity>
+ *       </RBSheet>
+ *     </>
+ *   );
+ * };
+ * 
  * // Loop tour control
  * const TourControls = () => {
  *   const { start, stop, setLoop, isLooping, loopCount } = useTour();
@@ -189,3 +272,5 @@
 
 export { TourProvider, useTour, TourContext } from './TourContext';
 export { default as TourStep } from './TourStep';
+export { default as TourOverlayRoot } from './TourOverlayRoot';
+export { default as useTourRoot } from './useTourRoot';
