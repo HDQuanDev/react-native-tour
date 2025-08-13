@@ -7,11 +7,15 @@ export const TourContext = createContext({
   next: () => {},
   stop: () => {},
   currentStep: undefined,
+  setLoop: () => {},
+  isLooping: false,
 });
 
 export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => {
   const [registry, setRegistry] = useState({});
   const [currentIndex, setCurrentIndex] = useState(null);
+  const [isLooping, setIsLooping] = useState(false);
+  const [loopCount, setLoopCount] = useState(0);
 
   const registerStep = useCallback(({ id, ref, title, note, onPress, autoDelay, continueText, theme }) => {
     setRegistry((prev) => ({ ...prev, [id]: { ref, title, note, onPress, autoDelay, continueText, theme } }));
@@ -27,7 +31,7 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => 
     [stepDefs, registry],
   );
 
-  const start = useCallback(() => {
+  const start = useCallback((loop = false) => {
     const currentSteps = stepDefs.map((s, index) => ({
       order: index,
       ...s,
@@ -35,6 +39,8 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => 
     }));
     
     if (currentSteps.length === 0) return;
+    setIsLooping(loop);
+    setLoopCount(0);
     const first = currentSteps[0];
     if (first.screen && onNavigate) onNavigate(first.screen);
     setCurrentIndex(0);
@@ -55,11 +61,36 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => 
       if (step.screen && onNavigate) onNavigate(step.screen);
       setCurrentIndex(nextIndex);
     } else {
-      setCurrentIndex(null);
+      // Đã hết steps
+      if (isLooping) {
+        // Nếu đang loop, quay về bước đầu
+        const newLoopCount = loopCount + 1;
+        setLoopCount(newLoopCount);
+        console.log(`🔄 Tour Loop ${newLoopCount} completed, restarting...`);
+        
+        const first = currentSteps[0];
+        if (first.screen && onNavigate) onNavigate(first.screen);
+        setCurrentIndex(0);
+      } else {
+        // Không loop, kết thúc tour
+        setCurrentIndex(null);
+        setLoopCount(0);
+      }
     }
-  }, [currentIndex, stepDefs, registry, onNavigate]);
+  }, [currentIndex, stepDefs, registry, onNavigate, isLooping, loopCount]);
 
-  const stop = useCallback(() => setCurrentIndex(null), []);
+  const stop = useCallback(() => {
+    setCurrentIndex(null);
+    setIsLooping(false);
+    setLoopCount(0);
+  }, []);
+
+  const setLoop = useCallback((loop) => {
+    setIsLooping(loop);
+    if (!loop) {
+      setLoopCount(0);
+    }
+  }, []);
 
   const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
@@ -88,12 +119,22 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate }) => 
   }, [currentIndex, stepDefs, registry, next]);
 
   return (
-    <TourContext.Provider value={{ registerStep, start, next, stop, currentStep }}>
+    <TourContext.Provider value={{ 
+      registerStep, 
+      start, 
+      next, 
+      stop, 
+      currentStep, 
+      setLoop, 
+      isLooping,
+      loopCount 
+    }}>
       {children}
       <TourOverlay 
         step={currentStep} 
         targetRef={currentRef} 
         onStepPress={handleStepPress}
+        loopCount={loopCount}
       />
     </TourContext.Provider>
   );

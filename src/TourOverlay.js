@@ -66,7 +66,7 @@ const getThemeStyles = (theme) => {
   };
 };
 
-const TourOverlay = ({ step, targetRef, onStepPress }) => {
+const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0 }) => {
   const [layout, setLayout] = useState(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const [countdown, setCountdown] = useState(null);
@@ -173,7 +173,7 @@ const TourOverlay = ({ step, targetRef, onStepPress }) => {
   }
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]} pointerEvents="box-none">
+    <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
       <Svg width="100%" height="100%" pointerEvents="none">
         <Mask id="mask">
           <Rect width="100%" height="100%" fill="#fff" />
@@ -271,6 +271,15 @@ const TourOverlay = ({ step, targetRef, onStepPress }) => {
         onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
         style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
       >
+        {/* Loop Counter */}
+        {loopCount > 0 && (
+          <View style={styles.loopCounter}>
+            <Text style={[styles.loopText, themeStyles.countdown]}>
+              🔄 Lần {loopCount}
+            </Text>
+          </View>
+        )}
+        
         {step.title ? (
           <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
         ) : null}
@@ -357,6 +366,18 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  loopCounter: {
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 150, 255, 0.1)',
+  },
+  loopText: {
+    fontSize: 12,
     fontWeight: '600',
   },
 });
