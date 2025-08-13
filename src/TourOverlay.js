@@ -153,194 +153,200 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSibli
     }
   }, [step?.autoDelay, step?.id]);
 
-  if (!step || !layout) {
-    return null;
-  }
-
-  const theme = step.theme || 'light';
-  const themeStyles = getThemeStyles(theme);
-
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const tooltipLeft = Math.min(layout.x, screenWidth - 260);
-  const arrowLeft = Math.min(
-    Math.max(layout.x + layout.width / 2 - 6, 0),
-    screenWidth - 12,
-  );
-
-  let tooltipTop = layout.y + layout.height + 8;
-  let arrowTop = layout.y + layout.height;
-  if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
-    tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
-    arrowTop = layout.y - 12;
-  }
-
-  const overlayContent = (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
-      <Svg width="100%" height="100%" pointerEvents="none">
-        <Mask id="mask">
-          <Rect width="100%" height="100%" fill="#fff" />
-          <Rect
-            x={layout.x}
-            y={layout.y}
-            width={layout.width}
-            height={layout.height}
-            rx={8}
-            ry={8}
-            fill="#000"
-          />
-        </Mask>
-        <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
-      </Svg>
-
-      {/* Block gestures outside highlighted area */}
-      <View
-        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={() => {}}
-        onResponderMove={() => {}}
-        onResponderTerminationRequest={() => false}
-      />
-      
-      <View
-        style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={() => {}}
-        onResponderMove={() => {}}
-        onResponderTerminationRequest={() => false}
-      />
-      
-      <View
-        style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={() => {}}
-        onResponderMove={() => {}}
-        onResponderTerminationRequest={() => false}
-      />
-      
-      <View
-        style={{
-          position: 'absolute',
-          left: layout.x + layout.width,
-          right: 0,
-          top: layout.y,
-          height: layout.height,
-        }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={() => {}}
-        onResponderMove={() => {}}
-        onResponderTerminationRequest={() => false}
-      />
-
-      {/* Highlighted area touch handler */}
-      <View
-        style={{
-          position: 'absolute',
-          left: layout.x,
-          top: layout.y,
-          width: layout.width,
-          height: layout.height,
-          zIndex: 10000,
-        }}
-        onStartShouldSetResponder={() => true}
-        onResponderGrant={(evt) => {
-          if (onStepPress) {
-            onStepPress(evt);
-          }
-        }}
-        onResponderTerminationRequest={() => false}
-      />
-
-      {/* Highlight border */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.highlight,
-          { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
-        ]}
-      />
-      
-      {/* Tooltip */}
-      <View
-        pointerEvents="none"
-        style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
-      />
-      <View
-        pointerEvents={(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? "auto" : "none"}
-        onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
-        style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
-      >
-        {/* Loop Counter */}
-        {loopCount > 0 && (
-          <View style={styles.loopCounter}>
-            <Text style={[styles.loopText, themeStyles.countdown]}>
-              🔄 Lần {loopCount}
-            </Text>
-          </View>
-        )}
-        
-        {step.title ? (
-          <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
-        ) : null}
-        {step.note ? (
-          <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
-        ) : null}
-        {countdown !== null ? (
-          <Text style={[styles.countdownText, themeStyles.countdown]}>
-            Tự động chuyển sau {countdown} giây...
-          </Text>
-        ) : null}
-        
-        {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
-          <TouchableOpacity 
-            style={[styles.continueButton, themeStyles.button]}
-            onPress={() => onStepPress?.()}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
-              {step.continueText}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </View>
-  );
-
-  // Use root siblings or regular render
+  // Always call this useEffect - manage root siblings
   useEffect(() => {
-    if (useRootSiblings) {
-      if (step && layout) {
-        // Create or update root sibling
-        if (rootSibling) {
-          rootSibling.update(overlayContent);
-        } else {
-          setRootSibling(new RootSiblings(overlayContent));
-        }
+    if (!useRootSiblings) {
+      return;
+    }
+
+    if (step && layout) {
+      // Create or update root sibling
+      const overlayContent = renderOverlayContent();
+      
+      if (rootSibling) {
+        rootSibling.update(overlayContent);
       } else {
-        // Destroy root sibling
-        if (rootSibling) {
-          rootSibling.destroy();
-          setRootSibling(null);
-        }
+        setRootSibling(new RootSiblings(overlayContent));
+      }
+    } else {
+      // Destroy root sibling
+      if (rootSibling) {
+        rootSibling.destroy();
+        setRootSibling(null);
       }
     }
     
     return () => {
-      if (useRootSiblings && rootSibling) {
+      if (rootSibling) {
         rootSibling.destroy();
       }
     };
-  }, [useRootSiblings, step, layout, overlayContent, rootSibling]);
+  }, [useRootSiblings, step, layout, countdown, tooltipHeight, loopCount]);
+
+  const renderOverlayContent = () => {
+    if (!step || !layout) {
+      return null;
+    }
+
+    const theme = step.theme || 'light';
+    const themeStyles = getThemeStyles(theme);
+
+    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+    const tooltipLeft = Math.min(layout.x, screenWidth - 260);
+    const arrowLeft = Math.min(
+      Math.max(layout.x + layout.width / 2 - 6, 0),
+      screenWidth - 12,
+    );
+
+    let tooltipTop = layout.y + layout.height + 8;
+    let arrowTop = layout.y + layout.height;
+    if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
+      tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
+      arrowTop = layout.y - 12;
+    }
+
+    return (
+      <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
+        <Svg width="100%" height="100%" pointerEvents="none">
+          <Mask id="mask">
+            <Rect width="100%" height="100%" fill="#fff" />
+            <Rect
+              x={layout.x}
+              y={layout.y}
+              width={layout.width}
+              height={layout.height}
+              rx={8}
+              ry={8}
+              fill="#000"
+            />
+          </Mask>
+          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
+        </Svg>
+
+        {/* Block gestures outside highlighted area */}
+        <View
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={() => {}}
+          onResponderMove={() => {}}
+          onResponderTerminationRequest={() => false}
+        />
+        
+        <View
+          style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={() => {}}
+          onResponderMove={() => {}}
+          onResponderTerminationRequest={() => false}
+        />
+        
+        <View
+          style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={() => {}}
+          onResponderMove={() => {}}
+          onResponderTerminationRequest={() => false}
+        />
+        
+        <View
+          style={{
+            position: 'absolute',
+            left: layout.x + layout.width,
+            right: 0,
+            top: layout.y,
+            height: layout.height,
+          }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={() => {}}
+          onResponderMove={() => {}}
+          onResponderTerminationRequest={() => false}
+        />
+
+        {/* Highlighted area touch handler */}
+        <View
+          style={{
+            position: 'absolute',
+            left: layout.x,
+            top: layout.y,
+            width: layout.width,
+            height: layout.height,
+            zIndex: 10000,
+          }}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={(evt) => {
+            if (onStepPress) {
+              onStepPress(evt);
+            }
+          }}
+          onResponderTerminationRequest={() => false}
+        />
+
+        {/* Highlight border */}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.highlight,
+            { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+          ]}
+        />
+        
+        {/* Tooltip */}
+        <View
+          pointerEvents="none"
+          style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
+        />
+        <View
+          pointerEvents={(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? "auto" : "none"}
+          onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
+          style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
+        >
+          {/* Loop Counter */}
+          {loopCount > 0 && (
+            <View style={styles.loopCounter}>
+              <Text style={[styles.loopText, themeStyles.countdown]}>
+                🔄 Lần {loopCount}
+              </Text>
+            </View>
+          )}
+          
+          {step.title ? (
+            <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
+          ) : null}
+          {step.note ? (
+            <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
+          ) : null}
+          {countdown !== null ? (
+            <Text style={[styles.countdownText, themeStyles.countdown]}>
+              Tự động chuyển sau {countdown} giây...
+            </Text>
+          ) : null}
+          
+          {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
+            <TouchableOpacity 
+              style={[styles.continueButton, themeStyles.button]}
+              onPress={() => onStepPress?.()}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
+                {step.continueText}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
 
   // If using root siblings, don't render normally
   if (useRootSiblings) {
     return null;
   }
 
-  return overlayContent;
+  return renderOverlayContent();
 };
 
 const styles = StyleSheet.create({
