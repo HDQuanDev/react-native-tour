@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
+import RootSiblings from 'react-native-root-siblings';
 
 const getThemeStyles = (theme) => {
   if (theme === 'dark') {
@@ -66,10 +67,11 @@ const getThemeStyles = (theme) => {
   };
 };
 
-const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0 }) => {
+const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0, useRootSiblings = false }) => {
   const [layout, setLayout] = useState(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const [countdown, setCountdown] = useState(null);
+  const [rootSibling, setRootSibling] = useState(null);
 
   useEffect(() => {
     if (targetRef?.current) {
@@ -172,7 +174,7 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0 }) => {
     arrowTop = layout.y - 12;
   }
 
-  return (
+  const overlayContent = (
     <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
       <Svg width="100%" height="100%" pointerEvents="none">
         <Mask id="mask">
@@ -306,6 +308,39 @@ const TourOverlay = ({ step, targetRef, onStepPress, loopCount = 0 }) => {
       </View>
     </View>
   );
+
+  // Use root siblings or regular render
+  useEffect(() => {
+    if (useRootSiblings) {
+      if (step && layout) {
+        // Create or update root sibling
+        if (rootSibling) {
+          rootSibling.update(overlayContent);
+        } else {
+          setRootSibling(new RootSiblings(overlayContent));
+        }
+      } else {
+        // Destroy root sibling
+        if (rootSibling) {
+          rootSibling.destroy();
+          setRootSibling(null);
+        }
+      }
+    }
+    
+    return () => {
+      if (useRootSiblings && rootSibling) {
+        rootSibling.destroy();
+      }
+    };
+  }, [useRootSiblings, step, layout, overlayContent, rootSibling]);
+
+  // If using root siblings, don't render normally
+  if (useRootSiblings) {
+    return null;
+  }
+
+  return overlayContent;
 };
 
 const styles = StyleSheet.create({

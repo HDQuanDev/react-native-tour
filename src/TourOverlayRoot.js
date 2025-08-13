@@ -140,12 +140,9 @@ const TourOverlayContent = ({ step, targetRef, onStepPress, loopCount = 0, onDes
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            // Auto advance after countdown completes
-            setTimeout(() => {
-              if (onStepPress) {
-                onStepPress();
-              }
-            }, 100);
+            if (onStepPress) {
+              onStepPress();
+            }
             return null;
           }
           return prev - 1;
@@ -156,7 +153,7 @@ const TourOverlayContent = ({ step, targetRef, onStepPress, loopCount = 0, onDes
     } else {
       setCountdown(null);
     }
-  }, [step?.autoDelay, step?.id]);
+  }, [step?.autoDelay, step?.id, onStepPress]);
 
   useEffect(() => {
     // Cleanup when step changes to null
@@ -330,8 +327,20 @@ class TourOverlayRoot {
   show(step, targetRef, onStepPress, loopCount = 0) {
     this.destroy();
     
-    if (step && targetRef) {
-      this.sibling = new RootSiblings(
+    this.sibling = new RootSiblings(
+      <TourOverlayContent
+        step={step}
+        targetRef={targetRef}
+        onStepPress={onStepPress}
+        loopCount={loopCount}
+        onDestroy={() => this.destroy()}
+      />
+    );
+  }
+
+  update(step, targetRef, onStepPress, loopCount = 0) {
+    if (this.sibling) {
+      this.sibling.update(
         <TourOverlayContent
           step={step}
           targetRef={targetRef}
@@ -340,26 +349,8 @@ class TourOverlayRoot {
           onDestroy={() => this.destroy()}
         />
       );
-    }
-  }
-
-  update(step, targetRef, onStepPress, loopCount = 0) {
-    if (step && targetRef) {
-      if (this.sibling) {
-        this.sibling.update(
-          <TourOverlayContent
-            step={step}
-            targetRef={targetRef}
-            onStepPress={onStepPress}
-            loopCount={loopCount}
-            onDestroy={() => this.destroy()}
-          />
-        );
-      } else {
-        this.show(step, targetRef, onStepPress, loopCount);
-      }
     } else {
-      this.destroy();
+      this.show(step, targetRef, onStepPress, loopCount);
     }
   }
 

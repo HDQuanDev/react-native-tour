@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from 'react';
 import TourOverlay from './TourOverlay';
-import TourOverlayRootWithContext from './TourOverlayRootWithContext';
 
 export const TourContext = createContext({
   registerStep: () => {},
@@ -17,7 +16,6 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const [currentIndex, setCurrentIndex] = useState(null);
   const [isLooping, setIsLooping] = useState(false);
   const [loopCount, setLoopCount] = useState(0);
-  const tourOverlayRoot = useRef(new TourOverlayRootWithContext()).current;
 
   const registerStep = useCallback(({ id, ref, title, note, onPress, autoDelay, continueText, theme }) => {
     setRegistry((prev) => ({ ...prev, [id]: { ref, title, note, onPress, autoDelay, continueText, theme } }));
@@ -90,10 +88,7 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
     setCurrentIndex(null);
     setIsLooping(false);
     setLoopCount(0);
-    if (useRootSiblings) {
-      tourOverlayRoot.destroy();
-    }
-  }, [useRootSiblings, tourOverlayRoot]);
+  }, []);
 
   const setLoop = useCallback((loop) => {
     setIsLooping(loop);
@@ -104,18 +99,6 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
 
   const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
-
-  // Context value to pass to root siblings
-  const contextValue = useMemo(() => ({
-    registerStep,
-    start,
-    next,
-    stop,
-    currentStep,
-    setLoop,
-    isLooping,
-    loopCount
-  }), [registerStep, start, next, stop, currentStep, setLoop, isLooping, loopCount]);
 
   const handleStepPress = useCallback((evt) => {
     // Get current step at time of press
@@ -140,37 +123,25 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
     next();
   }, [currentIndex, stepDefs, registry, next]);
 
-  // Handle root siblings overlay updates
-  useEffect(() => {
-    if (useRootSiblings) {
-      if (currentStep && currentRef) {
-        tourOverlayRoot.update(currentStep, currentRef, handleStepPress, loopCount, contextValue);
-      } else {
-        tourOverlayRoot.destroy();
-      }
-    }
-  }, [currentStep, currentRef, loopCount, useRootSiblings, tourOverlayRoot, contextValue]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (useRootSiblings) {
-        tourOverlayRoot.destroy();
-      }
-    };
-  }, [useRootSiblings, tourOverlayRoot]);
-
   return (
-    <TourContext.Provider value={contextValue}>
+    <TourContext.Provider value={{ 
+      registerStep, 
+      start, 
+      next, 
+      stop, 
+      currentStep, 
+      setLoop, 
+      isLooping,
+      loopCount 
+    }}>
       {children}
-      {!useRootSiblings && (
-        <TourOverlay 
-          step={currentStep} 
-          targetRef={currentRef} 
-          onStepPress={handleStepPress}
-          loopCount={loopCount}
-        />
-      )}
+      <TourOverlay 
+        step={currentStep} 
+        targetRef={currentRef} 
+        onStepPress={handleStepPress}
+        loopCount={loopCount}
+        useRootSiblings={useRootSiblings}
+      />
     </TourContext.Provider>
   );
 };
