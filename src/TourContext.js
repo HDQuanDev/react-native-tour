@@ -179,14 +179,6 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
 
-  console.log('TourContext state:', { 
-    currentIndex, 
-    hasCurrentStep: !!currentStep,
-    currentStepId: currentStep?.id,
-    hasCurrentRef: !!currentRef,
-    hasCurrentRefCurrent: !!currentRef?.current
-  });
-
   const handleStepPress = useCallback((evt) => {
     const currentSteps = stepDefs.map((s, index) => {
       const registered = registry[s.id] || {};

@@ -63,11 +63,6 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
 
   useEffect(() => {
     measureableRef.current.current = wrapperRef.current;
-    console.log('TourStep updated measureableRef for:', id, {
-      hasWrapperRef: !!wrapperRef.current,
-      hasMeasureableRef: !!measureableRef.current,
-      hasMeasureableRefCurrent: !!measureableRef.current.current
-    });
   });
 
   useEffect(() => {
