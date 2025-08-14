@@ -13,10 +13,87 @@ npm install react-native-svg
 
 ## Sử dụng cơ bản
 
+### Cách 1: Định nghĩa steps tập trung (Khuyến nghị)
+
 ```jsx
 import { TourProvider, TourStep, useTour } from 'react-native-tour';
 
-// Khai báo thứ tự và màn hình của từng bước
+// Định nghĩa tất cả steps và cấu hình tại một nơi
+const tourSteps = [
+  {
+    id: 'collection-tab', 
+    screen: 'Home',
+    title: "Ngũ cảnh",
+    note: "Ấn vào đây để xem, chạy và sửa các danh sách ngữ cảnh",
+    theme: 'dark'
+  },
+  {
+    id: 'search-button',
+    screen: 'Search', 
+    title: "Tìm kiếm",
+    note: "Sử dụng để tìm kiếm nội dung",
+    autoDelay: 3 // Tự động chuyển sau 3 giây
+  },
+  {
+    id: 'details',
+    screen: 'Details',
+    title: "Chi tiết", 
+    note: "Nhấn để tiếp tục"
+  }
+];
+
+// Bọc toàn bộ app
+const App = () => (
+  <TourProvider steps={tourSteps} onNavigate={(s) => navigation.navigate(s)}>
+    <HomeScreen />
+    <SearchScreen />
+    <DetailScreen />
+  </TourProvider>
+);
+
+// Chỉ cần wrap elements cần highlight, không cần định nghĩa title/note nữa
+const HomeScreen = () => {
+  const { start } = useTour();
+  return (
+    <View>
+      <TourStep id="collection-tab">
+        <Button title="Collection" onPress={() => {}} />
+      </TourStep>
+      
+      <Button title="Start Tour" onPress={() => start()} />
+    </View>
+  );
+};
+
+const SearchScreen = () => (
+  <View>
+    <TourStep id="search-button">
+      <Button title="Search" />
+    </TourStep>
+  </View>
+);
+
+const DetailScreen = () => (
+  <View>
+    <TourStep 
+      id="details"
+      onPress={() => {
+        // Có thể override hành động tại đây
+        console.log('Custom action');
+      }}
+    >
+      <Button title="Do something" />
+    </TourStep>
+  </View>
+);
+```
+
+### Cách 2: Định nghĩa steps phân tán (Cách cũ)
+
+```jsx
+import { TourProvider, TourStep, useTour } from 'react-native-tour';
+
+// Chỉ khai báo thứ tự và màn hình
 const steps = [
   { id: 'start', screen: 'Home' },
   { id: 'details', screen: 'Details' },
@@ -69,6 +146,32 @@ Tooltip được canh vị trí tự động: lật lên trên khi không đủ 
 3. **Khởi động tour** bằng `start()` lấy từ `useTour`.
 4. **Xử lý tương tác** trong `onPress` của `TourStep`. Sau khi chạy hàm này, thư viện tự chuyển sang bước tiếp theo.
 5. **Tooltip** tự căn vị trí để không che nội dung và luôn nằm trong màn hình.
+
+## Xử lý vấn đề Animation/Layout
+
+Nếu ứng dụng có nhiều animation hoặc hiệu ứng, tour có thể bị "đơ" do layout chưa ổn định. Package đã tự động kiểm tra và retry, nhưng bạn có thể force refresh nếu cần:
+
+```jsx
+const MyScreen = () => {
+  const { start, forceMeasure, forceRefresh } = useTour();
+  
+  const handleStartTour = () => {
+    // Nếu tour bị đơ, thử force refresh trước
+    forceRefresh();
+    
+    // Hoặc force đo lại layout
+    setTimeout(() => {
+      forceMeasure();
+    }, 100);
+    
+    start();
+  };
+  
+  return (
+    <Button title="Start Tour" onPress={handleStartTour} />
+  );
+};
+```
 
 ## Mẹo
 

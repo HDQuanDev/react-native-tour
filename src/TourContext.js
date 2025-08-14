@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, useRef } from 'react';
 import TourOverlay from './TourOverlay';
 
 export const TourContext = createContext({
@@ -9,6 +9,8 @@ export const TourContext = createContext({
   currentStep: undefined,
   setLoop: () => {},
   isLooping: false,
+  forceRefresh: () => {},
+  forceMeasure: () => {},
 });
 
 export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRootSiblings = false }) => {
@@ -16,68 +18,145 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const [currentIndex, setCurrentIndex] = useState(null);
   const [isLooping, setIsLooping] = useState(false);
   const [loopCount, setLoopCount] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const overlayRef = useRef(null);
 
   const registerStep = useCallback(({ id, ref, title, note, onPress, autoDelay, continueText, theme }) => {
     setRegistry((prev) => ({ ...prev, [id]: { ref, title, note, onPress, autoDelay, continueText, theme } }));
   }, []);
 
+  const forceRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
+
+  const forceMeasure = useCallback(() => {
+    if (overlayRef.current?.forceMeasure) {
+      overlayRef.current.forceMeasure();
+    }
+  }, []);
+
   const steps = useMemo(
     () =>
-      stepDefs.map((s, index) => ({
-        order: index,
-        ...s,
-        ...(registry[s.id] || {}),
-      })),
+      stepDefs.map((s, index) => {
+        const registered = registry[s.id] || {};
+        return {
+          order: index,
+          ...s,
+          ...(registered.title !== undefined && { title: registered.title }),
+          ...(registered.note !== undefined && { note: registered.note }),
+          ...(registered.theme !== undefined && { theme: registered.theme }),
+          ...(registered.autoDelay !== undefined && { autoDelay: registered.autoDelay }),
+          ...(registered.continueText !== undefined && { continueText: registered.continueText }),
+          ...(registered.ref && { ref: registered.ref }),
+          ...(registered.onPress && { onPress: registered.onPress }),
+        };
+      }),
     [stepDefs, registry],
   );
 
-  const start = useCallback((loop = false) => {
-    const currentSteps = stepDefs.map((s, index) => ({
-      order: index,
-      ...s,
-      ...(registry[s.id] || {}),
-    }));
+  const start = useCallback(async (loop = false) => {
+    const currentSteps = stepDefs.map((s, index) => {
+      const registered = registry[s.id] || {};
+      return {
+        order: index,
+        ...s,
+        ...(registered.title !== undefined && { title: registered.title }),
+        ...(registered.note !== undefined && { note: registered.note }),
+        ...(registered.theme !== undefined && { theme: registered.theme }),
+        ...(registered.autoDelay !== undefined && { autoDelay: registered.autoDelay }),
+        ...(registered.continueText !== undefined && { continueText: registered.continueText }),
+        ...(registered.ref && { ref: registered.ref }),
+        ...(registered.onPress && { onPress: registered.onPress }),
+      };
+    });
     
     if (currentSteps.length === 0) return;
     
-    // Small delay for root siblings to ensure components are registered
-    const delay = useRootSiblings ? 50 : 0;
-    setTimeout(() => {
-      setIsLooping(loop);
-      setLoopCount(0);
-      const first = currentSteps[0];
-      if (first.screen && onNavigate) onNavigate(first.screen);
+    setIsLooping(loop);
+    setLoopCount(0);
+    const first = currentSteps[0];
+    
+    if (first.screen && onNavigate) {
+      onNavigate(first.screen);
+    }
+    
+    const firstStepWithRef = currentSteps.find(step => step.ref);
+    
+    if (!firstStepWithRef) {
       setCurrentIndex(0);
-    }, delay);
-  }, [stepDefs, registry, onNavigate, useRootSiblings]);
+      return;
+    }
+    
+    const waitForLayout = () => {
+      return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        const checkLayout = () => {
+          attempts++;
+          
+          if (!first.ref?.current) {
+            if (attempts >= maxAttempts) {
+              resolve();
+              return;
+            }
+            setTimeout(checkLayout, 100);
+            return;
+          }
+          
+          first.ref.current.measure((x, y, width, height, pageX, pageY) => {
+            const isValidLayout = pageX >= 0 && pageY >= 0 && width > 0 && height > 0;
+            
+            if (isValidLayout) {
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              resolve();
+            } else {
+              setTimeout(checkLayout, 100);
+            }
+          });
+        };
+        setTimeout(checkLayout, 50);
+      });
+    };
+    
+    await waitForLayout();
+    
+    setCurrentIndex(0);
+  }, [stepDefs, registry, onNavigate]);
 
   const next = useCallback(() => {
     if (currentIndex === null) return;
     const nextIndex = currentIndex + 1;
     
-    const currentSteps = stepDefs.map((s, index) => ({
-      order: index,
-      ...s,
-      ...(registry[s.id] || {}),
-    }));
+    const currentSteps = stepDefs.map((s, index) => {
+      const registered = registry[s.id] || {};
+      return {
+        order: index,
+        ...s,
+        ...(registered.title !== undefined && { title: registered.title }),
+        ...(registered.note !== undefined && { note: registered.note }),
+        ...(registered.theme !== undefined && { theme: registered.theme }),
+        ...(registered.autoDelay !== undefined && { autoDelay: registered.autoDelay }),
+        ...(registered.continueText !== undefined && { continueText: registered.continueText }),
+        ...(registered.ref && { ref: registered.ref }),
+        ...(registered.onPress && { onPress: registered.onPress }),
+      };
+    });
     
     if (nextIndex < currentSteps.length) {
       const step = currentSteps[nextIndex];
       if (step.screen && onNavigate) onNavigate(step.screen);
       setCurrentIndex(nextIndex);
     } else {
-      // Đã hết steps
       if (isLooping) {
-        // Nếu đang loop, quay về bước đầu
         const newLoopCount = loopCount + 1;
         setLoopCount(newLoopCount);
-        console.log(`🔄 Tour Loop ${newLoopCount} completed, restarting...`);
         
         const first = currentSteps[0];
         if (first.screen && onNavigate) onNavigate(first.screen);
         setCurrentIndex(0);
       } else {
-        // Không loop, kết thúc tour
         setCurrentIndex(null);
         setLoopCount(0);
       }
@@ -100,26 +179,39 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
   const currentStep = currentIndex === null ? undefined : steps[currentIndex];
   const currentRef = currentStep?.ref;
 
+  console.log('TourContext state:', { 
+    currentIndex, 
+    hasCurrentStep: !!currentStep,
+    currentStepId: currentStep?.id,
+    hasCurrentRef: !!currentRef,
+    hasCurrentRefCurrent: !!currentRef?.current
+  });
+
   const handleStepPress = useCallback((evt) => {
-    // Get current step at time of press
-    const currentSteps = stepDefs.map((s, index) => ({
-      order: index,
-      ...s,
-      ...(registry[s.id] || {}),
-    }));
+    const currentSteps = stepDefs.map((s, index) => {
+      const registered = registry[s.id] || {};
+      return {
+        order: index,
+        ...s,
+        ...(registered.title !== undefined && { title: registered.title }),
+        ...(registered.note !== undefined && { note: registered.note }),
+        ...(registered.theme !== undefined && { theme: registered.theme }),
+        ...(registered.autoDelay !== undefined && { autoDelay: registered.autoDelay }),
+        ...(registered.continueText !== undefined && { continueText: registered.continueText }),
+        ...(registered.ref && { ref: registered.ref }),
+        ...(registered.onPress && { onPress: registered.onPress }),
+      };
+    });
     
     const step = currentIndex === null ? undefined : currentSteps[currentIndex];
     
-    // If step has autoDelay, don't allow manual press (auto advance is handled)
     if (step?.autoDelay && step.autoDelay > 0) {
-      return; // Do nothing for auto steps
+      return;
     }
     
-    // First call the step's onPress handler if it exists (from TourStep component or step definition)
     if (step?.onPress) {
       step.onPress(evt);
     }
-    // Then proceed to next step
     next();
   }, [currentIndex, stepDefs, registry, next]);
 
@@ -134,10 +226,14 @@ export const TourProvider = ({ children, steps: stepDefs = [], onNavigate, useRo
       isLooping,
       loopCount,
       currentIndex,
-      totalSteps: steps.length
+      totalSteps: steps.length,
+      forceRefresh,
+      forceMeasure
     }}>
       {children}
       <TourOverlay 
+        ref={overlayRef}
+        key={refreshKey}
         step={currentStep} 
         targetRef={currentRef} 
         onStepPress={handleStepPress}

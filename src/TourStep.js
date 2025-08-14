@@ -17,8 +17,18 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
       if (!wrapperRef.current) {
         return;
       }
+      
       try {
-        wrapperRef.current.measure(callback);
+        wrapperRef.current.measure((x, y, width, height, pageX, pageY) => {
+          if (pageX >= 0 && pageY >= 0 && width > 0 && height > 0) {
+            callback(x, y, width, height, pageX, pageY);
+          } else {
+            const nodeHandle = findNodeHandle(wrapperRef.current);
+            if (nodeHandle) {
+              UIManager.measure(nodeHandle, callback);
+            }
+          }
+        });
       } catch (error) {
         const nodeHandle = findNodeHandle(wrapperRef.current);
         if (nodeHandle) {
@@ -30,8 +40,18 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
       if (!wrapperRef.current) {
         return;
       }
+      
       try {
-        wrapperRef.current.measureInWindow(callback);
+        wrapperRef.current.measureInWindow((x, y, width, height) => {
+          if (x >= 0 && y >= 0 && width > 0 && height > 0) {
+            callback(x, y, width, height);
+          } else {
+            const nodeHandle = findNodeHandle(wrapperRef.current);
+            if (nodeHandle) {
+              UIManager.measureInWindow(nodeHandle, callback);
+            }
+          }
+        });
       } catch (error) {
         const nodeHandle = findNodeHandle(wrapperRef.current);
         if (nodeHandle) {
@@ -43,6 +63,11 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
 
   useEffect(() => {
     measureableRef.current.current = wrapperRef.current;
+    console.log('TourStep updated measureableRef for:', id, {
+      hasWrapperRef: !!wrapperRef.current,
+      hasMeasureableRef: !!measureableRef.current,
+      hasMeasureableRefCurrent: !!measureableRef.current.current
+    });
   });
 
   useEffect(() => {
@@ -69,7 +94,6 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
       ref={wrapperRef}
       collapsable={false}
       style={[
-        // Inherit tất cả style từ child để layout giống hệt
         child.props.style,
         { 
           opacity: currentStep?.id === id ? 0.3 : 1,
@@ -80,7 +104,6 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
       {React.cloneElement(child, {
         ...child.props,
         onPress: handlePress,
-        // Reset style của child để tránh duplicate với wrapper
         style: undefined,
       })}
     </View>
