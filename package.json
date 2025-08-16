@@ -1,6 +1,6 @@
 {
-  "name": "react-native-tour",
-  "version": "1.0.0",
+  "name": "rn-tour-simple",
+  "version": "0.0.2",
   "description": "",
   "main": "src/index.js",
   "scripts": {

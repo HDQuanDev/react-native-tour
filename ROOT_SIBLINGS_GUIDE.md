@@ -15,7 +15,7 @@ yarn add react-native-root-siblings
 ### 1. Tour với Root Siblings trong TourProvider
 
 ```jsx
-import { TourProvider } from 'react-native-tour';
+import { TourProvider } from 'rn-tour-simple';
 
 const App = () => (
   <TourProvider 
@@ -31,7 +31,7 @@ const App = () => (
 ### 2. Sử dụng useTourRoot Hook
 
 ```jsx
-import { useTourRoot } from 'react-native-tour';
+import { useTourRoot } from 'rn-tour-simple';
 
 const ModalWithTour = () => {
   const { showTour, hideTour } = useTourRoot();
@@ -65,7 +65,7 @@ const ModalWithTour = () => {
 ### 3. Tour với RBSheet
 
 ```jsx
-import { useTourRoot } from 'react-native-tour';
+import { useTourRoot } from 'rn-tour-simple';
 import RBSheet from 'react-native-raw-bottom-sheet';
 
 const RBSheetWithTour = () => {

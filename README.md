@@ -1,4 +1,4 @@
-# react-native-tour
+# rn-tour-simple
 
 Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho ứng dụng React Native. Các phần tử được tô sáng bằng mặt nạ SVG để tạo hiệu ứng mượt mà, vùng bên ngoài bị che sẽ không nhận được thao tác và cũng không thể cuộn. Người dùng chỉ bấm được vào vùng highlight và khi bấm, chỉ `onPress` của `TourStep` được gọi rồi tour tự chuyển sang bước tiếp theo. `onPress` của phần tử con chỉ hoạt động khi tour không chạy.
 
@@ -7,8 +7,15 @@ Thư viện nhỏ gọn giúp xây dựng màn hướng dẫn tương tác cho �
 Thêm gói từ GitHub và đảm bảo dự án đã có `react`, `react-native` và `react-native-svg`:
 
 ```bash
-npm install github:fake/react-native-tour
 npm install react-native-svg
+npm i rn-tour-simple
+```
+
+Hoặc sử dụng Yarn:
+
+```bash
+yarn add react-native-svg
+yarn add rn-tour-simple
 ```
 
 ## Sử dụng cơ bản
@@ -16,7 +23,7 @@ npm install react-native-svg
 ### Cách 1: Định nghĩa steps tập trung (Khuyến nghị)
 
 ```jsx
-import { TourProvider, TourStep, useTour } from 'react-native-tour';
+import { TourProvider, TourStep, useTour } from 'rn-tour-simple';
 
 // Định nghĩa tất cả steps và cấu hình tại một nơi
 const tourSteps = [
@@ -91,7 +98,7 @@ const DetailScreen = () => (
 ### Cách 2: Định nghĩa steps phân tán (Cách cũ)
 
 ```jsx
-import { TourProvider, TourStep, useTour } from 'react-native-tour';
+import { TourProvider, TourStep, useTour } from 'rn-tour-simple';
 
 // Chỉ khai báo thứ tự và màn hình
 const steps = [
