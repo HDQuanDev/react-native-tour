@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useCallback } from 'react';
 import { findNodeHandle, UIManager, View } from 'react-native';
 import { TourContext } from './TourContext';
 
-const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, children }) => {
+const TourStep = ({ id, title, note, onPress, autoDelay, finishText, theme, children }) => {
   const wrapperRef = useRef(null);
   const { registerStep, currentStep } = useContext(TourContext);
   const child = React.Children.only(children);
@@ -72,11 +72,11 @@ const TourStep = ({ id, title, note, onPress, autoDelay, continueText, theme, ch
       title, 
       note,
       autoDelay,
-      continueText,
+      finishText,
       theme,
       onPress: () => onPressRef.current?.()
     });
-  }, [id, title, note, autoDelay, continueText, theme, registerStep]);
+  }, [id, title, note, autoDelay, finishText, theme, registerStep]);
 
   const handlePress = useCallback((...args) => {
     if (currentStep?.id !== id && childOnPress) {

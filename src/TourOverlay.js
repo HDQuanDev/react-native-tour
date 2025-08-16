@@ -7,12 +7,13 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import Svg, { Rect, Mask } from 'react-native-svg';
-import RootSiblings from 'react-native-root-siblings';
+
 import { useTour } from './TourContext';
 
-const getThemeStyles = (theme) => {
+const getThemeStyles = (theme, customThemeStyles = {}) => {
+    let base;
     if (theme === 'dark') {
-        return {
+        base = {
             tooltip: {
                 backgroundColor: '#2d2d2d',
                 borderColor: '#555',
@@ -46,42 +47,43 @@ const getThemeStyles = (theme) => {
                 color: '#4CAF50',
             },
         };
+    } else {
+        base = {
+            tooltip: {
+                backgroundColor: '#fff',
+                borderColor: '#ddd',
+                borderWidth: 1,
+            },
+            arrow: {
+                backgroundColor: '#fff',
+            },
+            title: {
+                color: '#000',
+            },
+            text: {
+                color: '#000',
+            },
+            countdown: {
+                color: '#666',
+            },
+            button: {
+                backgroundColor: '#6200ee',
+            },
+            buttonText: {
+                color: '#fff',
+            },
+            skipButton: {
+                backgroundColor: 'transparent',
+            },
+            skipButtonText: {
+                color: '#999',
+            },
+            nextButtonText: {
+                color: '#4CAF50',
+            },
+        };
     }
-
-    return {
-        tooltip: {
-            backgroundColor: '#fff',
-            borderColor: '#ddd',
-            borderWidth: 1,
-        },
-        arrow: {
-            backgroundColor: '#fff',
-        },
-        title: {
-            color: '#000',
-        },
-        text: {
-            color: '#000',
-        },
-        countdown: {
-            color: '#666',
-        },
-        button: {
-            backgroundColor: '#6200ee',
-        },
-        buttonText: {
-            color: '#fff',
-        },
-        skipButton: {
-            backgroundColor: 'transparent',
-        },
-        skipButtonText: {
-            color: '#999',
-        },
-        nextButtonText: {
-            color: '#4CAF50',
-        },
-    };
+    return { ...base, ...customThemeStyles };
 };
 
 const TransitionBlocker = () => {
@@ -101,14 +103,12 @@ const TransitionBlocker = () => {
     );
 };
 
-const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount = 0, useRootSiblings = false }, ref) => {
-    const { next, stop, currentIndex, totalSteps } = useTour();
+const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount = 0 }, ref) => {
+    const { next, stop, currentIndex, totalSteps, currentSetting } = useTour();
     const safeCurrentIndex = currentIndex !== null ? currentIndex : 0;
     const [layout, setLayout] = useState(null);
     const [tooltipHeight, setTooltipHeight] = useState(0);
     const [countdown, setCountdown] = useState(null);
-    const [rootSibling, setRootSibling] = useState(null);
-    const [transitionBlockerSibling, setTransitionBlockerSibling] = useState(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     React.useImperativeHandle(ref, () => ({
@@ -201,28 +201,7 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
         }
     }, [step?.id, currentIndex]);
 
-    useEffect(() => {
-        if (!useRootSiblings) return;
-        if (isTransitioning) {
-            const blockerContent = <TransitionBlocker />;
-            if (transitionBlockerSibling) {
-                transitionBlockerSibling.update(blockerContent);
-            } else {
-                setTransitionBlockerSibling(new RootSiblings(blockerContent));
-            }
-        } else {
-            if (transitionBlockerSibling) {
-                transitionBlockerSibling.destroy();
-                setTransitionBlockerSibling(null);
-            }
-        }
-        return () => {
-            if (transitionBlockerSibling) {
-                transitionBlockerSibling.destroy();
-                setTransitionBlockerSibling(null);
-            }
-        };
-    }, [useRootSiblings, isTransitioning]);
+    // Đã loại bỏ logic RootSiblings
 
     const scrollElementIntoViewAuto = () => {
         if (!targetRef?.current) return;
@@ -284,232 +263,6 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
         }
     }, [step?.autoDelay, step?.id]);
 
-    useEffect(() => {
-        if (!useRootSiblings) {
-            return;
-        }
-        if (step && layout) {
-            const theme = step.theme || 'light';
-            const themeStyles = getThemeStyles(theme);
-            const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-            const tooltipLeft = Math.min(layout.x, screenWidth - 260);
-            const arrowLeft = Math.min(
-                Math.max(layout.x + layout.width / 2 - 6, 0),
-                screenWidth - 12,
-            );
-            let tooltipTop = layout.y + layout.height + 8;
-            let arrowTop = layout.y + layout.height;
-            if (layout.y + layout.height + tooltipHeight + 20 > screenHeight) {
-                tooltipTop = Math.max(layout.y - tooltipHeight - 8, 0);
-                arrowTop = layout.y - 12;
-            }
-            const overlayContent = (
-                <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]} pointerEvents="box-none">
-                    <Svg width="100%" height="100%" pointerEvents="none">
-                        <Mask id="mask">
-                            <Rect width="100%" height="100%" fill="#fff" />
-                            <Rect
-                                x={layout.x}
-                                y={layout.y}
-                                width={layout.width}
-                                height={layout.height}
-                                rx={8}
-                                ry={8}
-                                fill="#000"
-                            />
-                        </Mask>
-                        <Rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#mask)" />
-                    </Svg>
-                    <View
-                        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: layout.y }}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={() => handleOverlayPress()}
-                        onResponderMove={() => { }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                    <View
-                        style={{ position: 'absolute', left: 0, right: 0, top: layout.y + layout.height, bottom: 0 }}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={() => handleOverlayPress()}
-                        onResponderMove={() => { }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                    <View
-                        style={{ position: 'absolute', left: 0, top: layout.y, width: layout.x, height: layout.height }}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={() => handleOverlayPress()}
-                        onResponderMove={() => { }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                    <View
-                        style={{
-                            position: 'absolute',
-                            left: layout.x + layout.width,
-                            right: 0,
-                            top: layout.y,
-                            height: layout.height,
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={() => handleOverlayPress()}
-                        onResponderMove={() => { }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                    <View
-                        style={{
-                            position: 'absolute',
-                            left: layout.x,
-                            top: layout.y,
-                            width: layout.width,
-                            height: layout.height,
-                            zIndex: 10000,
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onResponderGrant={(evt) => {
-                            if (onStepPress) {
-                                onStepPress(evt);
-                            }
-                        }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                    <View
-                        pointerEvents="none"
-                        style={[
-                            styles.highlight,
-                            { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
-                        ]}
-                    />
-                    <View
-                        pointerEvents="none"
-                        style={[styles.arrow, themeStyles.arrow, { top: arrowTop, left: arrowLeft }]}
-                    />
-                    <View
-                        pointerEvents="auto"
-                        onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
-                        style={[styles.tooltip, themeStyles.tooltip, { top: tooltipTop, left: tooltipLeft }]}
-                    >
-                        {loopCount > 0 && (
-                            <View style={styles.loopCounter}>
-                                <Text style={[styles.loopText, themeStyles.countdown]}>
-                                    🔄 Lần {loopCount}
-                                </Text>
-                            </View>
-                        )}
-
-                        {step.title ? (
-                            <Text style={[styles.tooltipTitle, themeStyles.title]}>{step.title}</Text>
-                        ) : null}
-                        {step.note ? (
-                            <Text style={[styles.tooltipText, themeStyles.text]}>{step.note}</Text>
-                        ) : null}
-                        {countdown !== null ? (
-                            <Text style={[styles.countdownText, themeStyles.countdown]}>
-                                Tự động chuyển sau {countdown} giây...
-                            </Text>
-                        ) : null}
-                        {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
-                            <TouchableOpacity
-                                style={[styles.continueButton, themeStyles.button]}
-                                onPress={() => onStepPress?.()}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
-                                    {step.continueText}
-                                </Text>
-                            </TouchableOpacity>
-                        ) : null}
-                        {(!step.autoDelay || step.autoDelay <= 0) && (
-                            <View style={styles.buttonsContainer}>
-                                {(safeCurrentIndex > 0 && safeCurrentIndex < totalSteps - 1) && (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (isTransitioning) return;
-                                            stop();
-                                        }}
-                                        activeOpacity={0.7}
-                                        disabled={isTransitioning}
-                                    >
-                                        <Text style={[
-                                            styles.skipButtonText,
-                                            themeStyles.skipButtonText,
-                                            isTransitioning && { opacity: 0.5 }
-                                        ]}>
-                                            Bỏ qua
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
-                                {safeCurrentIndex < totalSteps - 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (isTransitioning) return;
-                                            handleOverlayPress();
-                                        }}
-                                        activeOpacity={0.7}
-                                        disabled={isTransitioning}
-                                    >
-                                        <Text style={[
-                                            styles.nextButtonText,
-                                            themeStyles.nextButtonText,
-                                            isTransitioning && { opacity: 0.5 }
-                                        ]}>
-                                            Tiếp theo
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        )}
-                    </View>
-                </View>
-            );
-
-            if (rootSibling) {
-                rootSibling.update(overlayContent);
-            } else {
-                setRootSibling(new RootSiblings(overlayContent));
-            }
-        } else if (step && !layout) {
-            const loadingOverlay = (
-                <View style={[StyleSheet.absoluteFill, {
-                    zIndex: 999999,
-                    backgroundColor: 'rgba(0,0,0,0.6)'
-                }]} pointerEvents="auto">
-                    <View
-                        style={StyleSheet.absoluteFill}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={() => { }} // Block mọi touch
-                        onResponderMove={() => { }}
-                        onResponderTerminationRequest={() => false}
-                    />
-                </View>
-            );
-
-            if (rootSibling) {
-                rootSibling.update(loadingOverlay);
-            } else {
-                setRootSibling(new RootSiblings(loadingOverlay));
-            }
-        } else {
-            if (rootSibling) {
-                rootSibling.destroy();
-                setRootSibling(null);
-            }
-        }
-        return () => {
-            if (rootSibling) {
-                rootSibling.destroy();
-                setRootSibling(null);
-            }
-        };
-    }, [useRootSiblings, step, layout, countdown, tooltipHeight, loopCount, safeCurrentIndex, totalSteps, next, stop, onStepPress, handleOverlayPress]);
-
-    if (useRootSiblings) {
-        return null;
-    }
-
     if (!step) {
         return null;
     }
@@ -533,7 +286,7 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
     }
 
     const theme = step.theme || 'light';
-    const themeStyles = getThemeStyles(theme);
+    const themeStyles = getThemeStyles(theme, currentSetting?.themeStyles);
 
     const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
     const tooltipLeft = Math.min(layout.x, screenWidth - 260);
@@ -668,14 +421,14 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
                         </Text>
                     ) : null}
 
-                    {(!step.autoDelay || step.autoDelay <= 0) && step.continueText ? (
+                    {(!step.autoDelay || step.autoDelay <= 0) && step.finishText ? (
                         <TouchableOpacity
                             style={[styles.continueButton, themeStyles.button]}
                             onPress={() => onStepPress?.()}
                             activeOpacity={0.7}
                         >
                             <Text style={[styles.continueButtonText, themeStyles.buttonText]}>
-                                {step.continueText}
+                                {step.finishText}
                             </Text>
                         </TouchableOpacity>
                     ) : null}
@@ -683,11 +436,11 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
                     {/* Buttons Row */}
                     {(!step.autoDelay || step.autoDelay <= 0) && (
                         <View style={styles.buttonsContainer}>
-                            {/* Skip Button - chỉ hiển thị khi đã qua bước đầu */}
+                            {/* Skip Button */}
                             {safeCurrentIndex > 0 && safeCurrentIndex < totalSteps - 1 && (
                                 <TouchableOpacity
                                     onPress={() => {
-                                        if (isTransitioning) return; // Không làm gì nếu đang transition
+                                        if (isTransitioning) return;
                                         stop();
                                     }}
                                     activeOpacity={0.7}
@@ -698,7 +451,7 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
                                         themeStyles.skipButtonText,
                                         isTransitioning && { opacity: 0.5 }
                                     ]}>
-                                        Bỏ qua
+                                        {currentSetting?.skipText || 'Bỏ qua'}
                                     </Text>
                                 </TouchableOpacity>
                             )}
@@ -718,7 +471,7 @@ const TourOverlay = React.forwardRef(({ step, targetRef, onStepPress, loopCount 
                                         themeStyles.nextButtonText,
                                         isTransitioning && { opacity: 0.5 }
                                     ]}>
-                                        Tiếp theo
+                                        {currentSetting?.continueText || 'Tiếp theo'}
                                     </Text>
                                 </TouchableOpacity>
                             )}
